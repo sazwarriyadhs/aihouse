@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Build
+.next/
+dist/
+build/
+out/
+coverage/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Go
+*.exe
+*.test
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database backups and local data
+backups/
+*.dump
+*.sql.gz
+
+
+# Local AI assistant state
+.refact/
+
+# Temporary bootstrap project
+apps/web-bootstrap-temp/
+
+# Editor/build metadata
+*.tsbuildinfo
+
+# Local backup copies of source files
+*.bak
+*.bak-*
+*.before-*
+
+# Flutter generated files
+.dart_tool/
+**/.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Generated build output
+build/
+**/build/
+.gradle/
+**/.gradle/
+Pods/
+**/Pods/
+*.dill

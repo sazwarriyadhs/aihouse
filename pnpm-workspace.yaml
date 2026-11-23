@@ -1,0 +1,8 @@
+packages:
+  - "apps/*"
+  - "!apps/web-bootstrap-temp"
+  - "packages/*"
+
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
