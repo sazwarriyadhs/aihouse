@@ -78,6 +78,111 @@ Beyond software development, AI House Generator welcomes collaboration with star
 
 ---
 
+## Current Development Status
+
+The project has an implemented foundation for project management, structured floor-plan workflows, immutable design versions, and asynchronous CAD exports. This implementation snapshot supplements the broader product vision and roadmap described below.
+
+| Capability | Current status |
+|---|---|
+| Web application foundation | Implemented |
+| Project management workflow | Implemented foundation |
+| Project detail and editing | Implemented |
+| Structured floor-plan workflow | Implemented foundation |
+| Room, wall, door, and window data | Implemented |
+| Design version persistence | Implemented |
+| Background CAD job processing | Implemented foundation |
+| 2D DXF export | Implemented |
+| 2D FCStd export | Implemented |
+| 3D FCStd export | Implemented |
+| 3D STEP export | Implemented foundation |
+| AI-assisted design generation | Planned |
+| Advanced 3D visualization | Planned / expanding |
+| IFC/BIM interoperability | Planned |
+| BOQ and material estimation | Planned |
+
+**Important:** The current CAD exporter is an initial implementation. It does not yet generate a complete construction-ready architectural model. AI-assisted generation and other roadmap capabilities must not be interpreted as production features until implemented and validated.
+
+---
+
+## Implemented Features
+
+### 1. Project Management
+
+The web application provides a foundation for managing residential design projects.
+
+Implemented workflows include:
+
+- Project workspace.
+- Project detail view.
+- Project editing routes.
+- Project-scoped API communication.
+- Structured project data management.
+
+### 2. Structured Floor-Plan Management
+
+The platform supports structured floor-plan data representing:
+
+- Rooms.
+- Walls.
+- Doors.
+- Windows.
+
+The floor-plan workflow includes:
+
+- Element identifiers.
+- Geometric data.
+- Metric dimensions.
+- Wall and opening references.
+- Relevant site-boundary constraints.
+- Input validation.
+- Design version creation.
+
+Saved floor-plan changes are persisted as identifiable design versions.
+
+### 3. Immutable Design Versions
+
+The system establishes a versioned design-data workflow.
+
+Each saved design version can be used as a reference for downstream CAD generation.
+
+This provides a foundation for:
+
+- Design revision tracking.
+- Traceable export inputs.
+- Reproducible CAD generation.
+- Project history management.
+
+### 4. Asynchronous CAD Generation
+
+CAD generation is handled through a dedicated background worker rather than being performed directly inside an HTTP request.
+
+The current pipeline includes:
+
+- CAD export job submission.
+- Redis-backed job processing.
+- Go worker execution.
+- FreeCAD Python automation.
+- Artifact metadata persistence.
+- SHA-256 checksum generation.
+
+### 5. CAD Deliverables
+
+The current exporter supports the following outputs:
+
+| Dimension | Format | Status |
+|---|---|---|
+| 2D | DXF | Implemented |
+| 2D | FCStd | Implemented |
+| 3D | FCStd | Implemented |
+| 3D | STEP | Implemented foundation |
+| 3D | STL | Not currently generated |
+| BIM | IFC | Not implemented |
+
+The database schema recognizes STL as an allowed artifact format, but the current exporter does not generate STL files.
+
+---
+
+
 # Product vision
 
 AHG aims to bridge the gap between AI-generated architectural concepts, editable CAD models, and practical construction workflows.
@@ -310,7 +415,7 @@ The Floor Plan Editor provides a dedicated workspace for architectural layout an
 
 FreeCAD is an open-source parametric 3D CAD application that can provide an editable modeling environment for architectural design workflows.
 
-The intended integration is to make AHG capable of translating structured architectural requirements and AI-assisted design outputs into editable CAD models.
+The current integration translates supported structured floor-plan data into CAD deliverables through FreeCAD Python automation. Extending this workflow to AI-generated requirements, richer parametric architectural components, and broader CAD/BIM interoperability remains part of the product roadmap.
 
 ## Planned integration capabilities
 
@@ -336,7 +441,7 @@ The intended integration is to make AHG capable of translating structured archit
 
 Format support will depend on the specific FreeCAD workbench, implementation, and compatibility testing.
 
-**Integration status:** Planned — implementation and interoperability testing required.
+**Current integration status:** FreeCAD Python automation is implemented for the current 2D and 3D CAD export pipeline. Broader parametric architectural modeling, full component generation, IFC/BIM interoperability, and end-to-end construction workflows remain planned and require further implementation and validation.
 
 Official website: https://www.freecad.org/
 
