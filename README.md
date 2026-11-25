@@ -1,5 +1,13 @@
 # AI House Generator
 
+<p align="center">
+  <img src="apps/web/public/branding/dasboard_logo.png" alt="AI House Generator logo" width="220" />
+</p>
+
+<p align="center">
+  <strong>AI-assisted residential design and project workflows with an open-source CAD export pipeline.</strong>
+</p>
+
 **AI-assisted residential design and project workflows with an open-source CAD export pipeline.**
 
 AI House Generator (AHG) is a development-stage platform for managing house-design projects, editing structured floor plans, and generating CAD deliverables from versioned design data. The project is being developed by **PT DIGI MEDIA KOMUNIKA**.
