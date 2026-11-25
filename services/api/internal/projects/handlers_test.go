@@ -68,6 +68,8 @@ func TestCreateRejectsInvalidRequests(t *testing.T) {
 		{"depth above maximum", `{"name":"Test","land_width_m":10,"land_depth_m":1001,"floors":1,"orientation":"N"}`},
 		{"zero floors", `{"name":"Test","land_width_m":10,"land_depth_m":15,"floors":0,"orientation":"N"}`},
 		{"too many floors", `{"name":"Test","land_width_m":10,"land_depth_m":15,"floors":3,"orientation":"N"}`},
+		{"unknown design style", `{"name":"Test","land_width_m":10,"land_depth_m":15,"floors":1,"orientation":"N","design_style_id":"unknown-style","design_style_name":"Unknown","design_style_image":"/assets/house-types/01_Rumah_Minimalis_Modern.jpg"}`},
+		{"mismatched design style name", `{"name":"Test","land_width_m":10,"land_depth_m":15,"floors":1,"orientation":"N","design_style_id":"modern-minimalist","design_style_name":"Wrong Name","design_style_image":"/assets/house-types/01_Rumah_Minimalis_Modern.jpg"}`},
 		{"invalid orientation", `{"name":"Test","land_width_m":10,"land_depth_m":15,"floors":1,"orientation":"NORTH"}`},
 		{"body too large", oversizedBody},
 	}
@@ -91,7 +93,8 @@ func TestProjectRoutesRejectUnsupportedMethods(t *testing.T) {
 		path      string
 		wantAllow string
 	}{
-		{"POST detail route", http.MethodPost, "/api/v1/projects/00000000-0000-4000-8000-000000000001", "GET"},
+		{"POST detail route", http.MethodPost, "/api/v1/projects/00000000-0000-4000-8000-000000000001", "GET, PUT"},
+		{"PATCH detail route", http.MethodPatch, "/api/v1/projects/00000000-0000-4000-8000-000000000001", "GET, PUT"},
 		{"PUT collection route", http.MethodPut, "/api/v1/projects", "GET, POST"},
 		{"DELETE collection route", http.MethodDelete, "/api/v1/projects", "GET, POST"},
 	}
@@ -119,5 +122,55 @@ func TestProjectRoutesRejectInvalidPathsAndIDs(t *testing.T) {
 	t.Run("invalid project UUID", func(t *testing.T) {
 		rec := performRequest(handler, http.MethodGet, "/api/v1/projects/not-a-uuid", "")
 		assertJSONError(t, rec, http.StatusBadRequest)
+	})
+}
+
+// Floor plan endpoint routing tests.
+func TestFloorPlanRoutes(t *testing.T) {
+	handler := NewHandler(nil)
+	projectID := "00000000-0000-4000-8000-000000000001"
+
+	t.Run("unsupported method", func(t *testing.T) {
+		rec := performRequest(
+			handler,
+			http.MethodPost,
+			"/api/v1/projects/"+projectID+"/floor-plans",
+			"",
+		)
+		assertJSONError(t, rec, http.StatusMethodNotAllowed)
+
+		if got := rec.Header().Get("Allow"); got != "GET, PUT" {
+			t.Errorf("Allow = %q, want %q", got, "GET, PUT")
+		}
+	})
+
+	t.Run("invalid project UUID", func(t *testing.T) {
+		rec := performRequest(
+			handler,
+			http.MethodGet,
+			"/api/v1/projects/not-a-uuid/floor-plans",
+			"",
+		)
+		assertJSONError(t, rec, http.StatusBadRequest)
+	})
+
+	t.Run("unknown nested route", func(t *testing.T) {
+		rec := performRequest(
+			handler,
+			http.MethodGet,
+			"/api/v1/projects/"+projectID+"/unknown",
+			"",
+		)
+		assertJSONError(t, rec, http.StatusNotFound)
+	})
+
+	t.Run("extra path segment", func(t *testing.T) {
+		rec := performRequest(
+			handler,
+			http.MethodGet,
+			"/api/v1/projects/"+projectID+"/floor-plans/extra",
+			"",
+		)
+		assertJSONError(t, rec, http.StatusNotFound)
 	})
 }

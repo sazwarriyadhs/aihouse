@@ -144,8 +144,48 @@ func TestProjectCRUDIntegration(t *testing.T) {
 		t.Errorf("floors = %d, want 2", model.Building.Floors)
 	}
 
-	sum := sha256.Sum256(created.CanonicalModel)
-	expectedChecksum := hex.EncodeToString(sum[:])
+	// Inject future floor-planning data into version 1.
+	floorPlansJSON := []byte(`[{
+                "floor_number": 1,
+                "name": "Ground Floor",
+                "rooms": [{
+                        "id": "room-regression-1",
+                        "name": "Living Room",
+                        "type": "living",
+                        "x_m": 1,
+                        "y_m": 2,
+                        "width_m": 4,
+                        "depth_m": 5
+                }]
+        }]`)
+
+	var fixtureModelJSON []byte
+	err = pool.QueryRow(ctx, `
+                UPDATE core.design_versions
+                SET canonical_model = jsonb_set(
+                        canonical_model,
+                        '{building,floor_plans}',
+                        $2::jsonb,
+                        true
+                )
+                WHERE id = $1
+                RETURNING canonical_model
+        `, created.VersionID, floorPlansJSON).Scan(&fixtureModelJSON)
+	if err != nil {
+		t.Fatalf("inject floor planning fixture: %v", err)
+	}
+
+	fixtureSum := sha256.Sum256(fixtureModelJSON)
+	expectedChecksum := hex.EncodeToString(fixtureSum[:])
+
+	_, err = pool.Exec(ctx, `
+                UPDATE core.design_versions
+                SET model_checksum = $2
+                WHERE id = $1
+        `, created.VersionID, expectedChecksum)
+	if err != nil {
+		t.Fatalf("update fixture checksum: %v", err)
+	}
 
 	// Verify project appears in collection.
 	listReq := httptest.NewRequest(http.MethodGet, "/api/v1/projects", nil)
@@ -247,6 +287,186 @@ func TestProjectCRUDIntegration(t *testing.T) {
 			projectCount, designCount, versionCount)
 	}
 
+	// Edit the project and create an immutable second design version.
+	updatedProjectName := projectName + " Updated"
+	updateBody, err := json.Marshal(createRequest{
+		Name:        updatedProjectName,
+		Description: "Updated integration test",
+		Location:    "Jakarta",
+		LandWidth:   12,
+		LandDepth:   20,
+		Orientation: "E",
+		Floors:      1,
+	})
+	if err != nil {
+		t.Fatalf("encode update request: %v", err)
+	}
+
+	updateReq := httptest.NewRequest(
+		http.MethodPut,
+		detailPath,
+		bytes.NewReader(updateBody),
+	)
+	updateRec := httptest.NewRecorder()
+	handler.ServeHTTP(updateRec, updateReq)
+
+	if updateRec.Code != http.StatusOK {
+		t.Fatalf("update status = %d, want %d; body: %s",
+			updateRec.Code, http.StatusOK, updateRec.Body.String())
+	}
+
+	var updated struct {
+		ProjectID      string          `json:"project_id"`
+		DesignID       string          `json:"design_id"`
+		VersionID      string          `json:"version_id"`
+		VersionNumber  int             `json:"version_number"`
+		ModelChecksum  string          `json:"model_checksum"`
+		CanonicalModel json.RawMessage `json:"canonical_model"`
+	}
+	if err := json.Unmarshal(updateRec.Body.Bytes(), &updated); err != nil {
+		t.Fatalf("decode update response: %v", err)
+	}
+
+	if updated.ProjectID != created.ProjectID.String() {
+		t.Errorf("updated project ID = %q, want %q", updated.ProjectID, created.ProjectID)
+	}
+	if updated.DesignID != created.DesignID.String() {
+		t.Errorf("updated design ID = %q, want %q", updated.DesignID, created.DesignID)
+	}
+	if updated.VersionID == "" || updated.VersionID == created.VersionID.String() {
+		t.Errorf("updated version ID = %q; expected a new version ID", updated.VersionID)
+	}
+	if updated.VersionNumber != 2 {
+		t.Errorf("updated version number = %d, want 2", updated.VersionNumber)
+	}
+
+	// Verify future floor-planning data survives project information updates.
+	var preservedModel struct {
+		Building struct {
+			FloorPlans []struct {
+				FloorNumber int `json:"floor_number"`
+				Rooms       []struct {
+					ID    string  `json:"id"`
+					Name  string  `json:"name"`
+					X     float64 `json:"x_m"`
+					Y     float64 `json:"y_m"`
+					Width float64 `json:"width_m"`
+					Depth float64 `json:"depth_m"`
+				} `json:"rooms"`
+			} `json:"floor_plans"`
+		} `json:"building"`
+	}
+
+	if err := json.Unmarshal(updated.CanonicalModel, &preservedModel); err != nil {
+		t.Fatalf("decode preserved floor planning model: %v", err)
+	}
+
+	if len(preservedModel.Building.FloorPlans) != 1 {
+		t.Fatalf("floor plan count = %d, want 1",
+			len(preservedModel.Building.FloorPlans))
+	}
+
+	floorPlan := preservedModel.Building.FloorPlans[0]
+	if floorPlan.FloorNumber != 1 {
+		t.Errorf("preserved floor number = %d, want 1", floorPlan.FloorNumber)
+	}
+
+	if len(floorPlan.Rooms) != 1 {
+		t.Fatalf("preserved room count = %d, want 1", len(floorPlan.Rooms))
+	}
+
+	room := floorPlan.Rooms[0]
+	if room.ID != "room-regression-1" ||
+		room.Name != "Living Room" ||
+		room.X != 1 ||
+		room.Y != 2 ||
+		room.Width != 4 ||
+		room.Depth != 5 {
+		t.Errorf("floor planning room was not preserved: %+v", room)
+	}
+	updatedSum := sha256.Sum256(updated.CanonicalModel)
+	updatedExpectedChecksum := hex.EncodeToString(updatedSum[:])
+	if updated.ModelChecksum != updatedExpectedChecksum {
+		t.Errorf("updated checksum = %q, want %q",
+			updated.ModelChecksum, updatedExpectedChecksum)
+	}
+
+	// Verify the original snapshot remains unchanged and version 2 is current.
+	var storedProjectName string
+	var storedCurrentVersion, storedVersionCount int
+	var storedV1Checksum, storedV2Checksum string
+
+	err = pool.QueryRow(ctx, `
+      SELECT
+          p.name,
+          d.current_version,
+          (SELECT COUNT(*) FROM core.design_versions WHERE design_id = d.id),
+          (SELECT model_checksum FROM core.design_versions
+             WHERE design_id = d.id AND version_number = 1),
+          (SELECT model_checksum FROM core.design_versions
+             WHERE design_id = d.id AND version_number = 2)
+      FROM core.projects p
+      JOIN core.designs d ON d.project_id = p.id
+      WHERE p.id = $1 AND d.id = $2
+  `, created.ProjectID, created.DesignID).Scan(
+		&storedProjectName,
+		&storedCurrentVersion,
+		&storedVersionCount,
+		&storedV1Checksum,
+		&storedV2Checksum,
+	)
+	if err != nil {
+		t.Fatalf("verify version history: %v", err)
+	}
+
+	if storedProjectName != updatedProjectName {
+		t.Errorf("stored project name = %q, want %q", storedProjectName, updatedProjectName)
+	}
+	if storedCurrentVersion != 2 {
+		t.Errorf("stored current version = %d, want 2", storedCurrentVersion)
+	}
+	if storedVersionCount != 2 {
+		t.Errorf("stored version count = %d, want 2", storedVersionCount)
+	}
+	if storedV1Checksum != expectedChecksum {
+		t.Errorf("version 1 checksum changed: got %q, want %q",
+			storedV1Checksum, expectedChecksum)
+	}
+	if storedV2Checksum != updatedExpectedChecksum {
+		t.Errorf("version 2 checksum = %q, want %q",
+			storedV2Checksum, updatedExpectedChecksum)
+	}
+
+	// Verify GET detail returns the new active version.
+	updatedDetailReq := httptest.NewRequest(http.MethodGet, detailPath, nil)
+	updatedDetailRec := httptest.NewRecorder()
+	handler.ServeHTTP(updatedDetailRec, updatedDetailReq)
+
+	if updatedDetailRec.Code != http.StatusOK {
+		t.Fatalf("updated detail status = %d; body: %s",
+			updatedDetailRec.Code, updatedDetailRec.Body.String())
+	}
+
+	if err := json.Unmarshal(updatedDetailRec.Body.Bytes(), &detail); err != nil {
+		t.Fatalf("decode updated detail response: %v", err)
+	}
+	if len(detail.Designs) != 1 {
+		t.Fatalf("updated detail design count = %d, want 1", len(detail.Designs))
+	}
+
+	activeDesign := detail.Designs[0]
+	if activeDesign.CurrentVersion != 2 || activeDesign.VersionNumber != 2 {
+		t.Errorf("active version metadata = current %d, version %d; want 2 and 2",
+			activeDesign.CurrentVersion, activeDesign.VersionNumber)
+	}
+	if activeDesign.VersionID != updated.VersionID {
+		t.Errorf("active version ID = %q, want %q",
+			activeDesign.VersionID, updated.VersionID)
+	}
+	if activeDesign.ModelChecksum != updatedExpectedChecksum {
+		t.Errorf("active checksum = %q, want %q",
+			activeDesign.ModelChecksum, updatedExpectedChecksum)
+	}
 	if !strings.Contains(createRec.Header().Get("Content-Type"), "application/json") {
 		t.Error("create response Content-Type is not JSON")
 	}

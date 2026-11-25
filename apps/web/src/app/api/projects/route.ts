@@ -1,16 +1,20 @@
 const API_BASE_URL = (
-  process.env.API_BASE_URL || "http://127.0.0.1:8098"
+  process.env.API_BASE_URL || "http://127.0.0.1:8097"
 ).replace(/\/+$/, "");
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+async function forwardRequest(
+  request: Request,
+  method: "POST" | "PUT",
+  endpoint: string,
+) {
   try {
     const body = await request.text();
 
-    const upstream = await fetch(`${API_BASE_URL}/api/v1/projects`, {
-      method: "POST",
+    const upstream = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method,
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -35,4 +39,8 @@ export async function POST(request: Request) {
       { status: 502 },
     );
   }
+}
+
+export async function POST(request: Request) {
+  return forwardRequest(request, "POST", "/api/v1/projects");
 }

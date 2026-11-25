@@ -71,3 +71,6 @@ build/
 Pods/
 **/Pods/
 *.dill
+
+# Generated CAD exports
+/storage/

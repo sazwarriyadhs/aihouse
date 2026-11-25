@@ -1,0 +1,220 @@
+import FreeCAD as App
+import Part
+import os
+import traceback
+
+OUTPUT = r"D:\ai-house-generator\exports\azwar-house\Azwar_House_3D.FCStd"
+LOG = r"D:\ai-house-generator\exports\azwar-house\stairs-balcony-build-log.txt"
+
+def log(s):
+    with open(LOG, "a", encoding="utf-8") as f:
+        f.write(str(s) + "\n")
+
+def add_box(doc, group, name, x, y, z, sx, sy, sz, color):
+    shape = Part.makeBox(sx, sy, sz, App.Vector(x, y, z))
+    if shape.isNull() or not shape.isValid() or shape.Volume <= 0:
+        raise ValueError("Invalid geometry: " + name)
+
+    obj = doc.addObject("Part::Feature", name)
+    obj.Label = name.replace("_", " ")
+    obj.Shape = shape
+    obj.ViewObject.ShapeColor = color
+    obj.ViewObject.LineColor = (0.08, 0.08, 0.08)
+    group.addObject(obj)
+    return obj
+
+try:
+    if os.path.exists(LOG):
+        os.remove(LOG)
+
+    doc = App.openDocument(OUTPUT)
+
+    # Remove previous generated groups if macro is rerun.
+    for group_name in ("FrontBalcony", "UStaircase"):
+        old = doc.getObject(group_name)
+        if old:
+            doc.removeObject(old.Name)
+
+    doc.recompute()
+
+    # --------------------------------------------------
+    # 1. PROJECTING FRONT BALCONY
+    # House front facade: y = 2500 mm.
+    # Balcony extends outward to y = 1000 mm.
+    # --------------------------------------------------
+    balcony = doc.addObject(
+        "App::DocumentObjectGroup", "FrontBalcony"
+    )
+    balcony.Label = "Front Balcony - Projecting 1.5 m"
+
+    concrete = (0.72, 0.72, 0.69)
+    black = (0.08, 0.09, 0.10)
+
+    bx = 1000.0
+    by = 1000.0
+    bw = 2200.0
+    bd = 1500.0
+    floor_z = 3100.0
+    slab_t = 150.0
+    rail_h = 1050.0
+
+    add_box(
+        doc, balcony, "Balcony_Slab",
+        bx, by, floor_z - slab_t,
+        bw, bd, slab_t, concrete
+    )
+
+    # Railing posts along the front edge.
+    post_size = 40.0
+    post_positions = [bx, bx + 700, bx + 1400, bx + 2100, bx + bw - post_size]
+
+    for i, px in enumerate(post_positions):
+        add_box(
+            doc, balcony, "Balcony_Front_Post_{:02d}".format(i + 1),
+            px, by, floor_z,
+            post_size, post_size, rail_h, black
+        )
+
+    # Front top and bottom rails.
+    rail_size = 45.0
+    add_box(
+        doc, balcony, "Balcony_Front_Top_Rail",
+        bx, by, floor_z + rail_h - rail_size,
+        bw, rail_size, rail_size, black
+    )
+    add_box(
+        doc, balcony, "Balcony_Front_Bottom_Rail",
+        bx, by, floor_z + 250,
+        bw, rail_size, rail_size, black
+    )
+
+    # Side railings, excluding the wall connection at y=2500.
+    for side_name, side_x in (
+        ("Left", bx),
+        ("Right", bx + bw - post_size)
+    ):
+        side_positions = [by, by + 700, by + bd - post_size]
+
+        for i, py in enumerate(side_positions):
+            add_box(
+                doc, balcony,
+                "Balcony_{}_Post_{:02d}".format(side_name, i + 1),
+                side_x, py, floor_z,
+                post_size, post_size, rail_h, black
+            )
+
+        add_box(
+            doc, balcony, "Balcony_{}_Top_Rail".format(side_name),
+            side_x, by, floor_z + rail_h - rail_size,
+            rail_size, bd, rail_size, black
+        )
+        add_box(
+            doc, balcony, "Balcony_{}_Bottom_Rail".format(side_name),
+            side_x, by, floor_z + 250,
+            rail_size, bd, rail_size, black
+        )
+
+    # --------------------------------------------------
+    # 2. CONCEPTUAL U-SHAPED STAIRCASE
+    # Based on Ground Floor room f1-stair:
+    # x=3000..5000 mm, y=9000..12000 mm.
+    # --------------------------------------------------
+    stairs = doc.addObject(
+        "App::DocumentObjectGroup", "UStaircase"
+    )
+    stairs.Label = "U-shaped Staircase - Conceptual"
+
+    wood = (0.62, 0.43, 0.25)
+    riser_color = (0.78, 0.70, 0.58)
+
+    stair_x1 = 3100.0
+    stair_x2 = 4050.0
+    flight_width = 850.0
+    start_y = 9100.0
+    tread_depth = 250.0
+    tread_thickness = 50.0
+    total_rise = 3100.0
+    risers_per_flight = 9
+    half_rise = total_rise / 2.0
+    rise = half_rise / risers_per_flight
+
+    # First flight: rising toward the intermediate landing.
+    for i in range(risers_per_flight):
+        z_top = (i + 1) * rise
+        y = start_y + i * tread_depth
+
+        add_box(
+            doc, stairs, "Stair_Flight_1_Tread_{:02d}".format(i + 1),
+            stair_x1, y, z_top - tread_thickness,
+            flight_width, tread_depth, tread_thickness, wood
+        )
+
+        add_box(
+            doc, stairs, "Stair_Flight_1_Riser_{:02d}".format(i + 1),
+            stair_x1, y, z_top - rise,
+            flight_width, 30.0, rise, riser_color
+        )
+
+    # Intermediate landing.
+    landing_y = start_y + risers_per_flight * tread_depth
+    add_box(
+        doc, stairs, "Stair_Mid_Landing",
+        stair_x1, landing_y, half_rise - tread_thickness,
+        flight_width * 2.0, 600.0,
+        tread_thickness, wood
+    )
+
+    # Second flight: reverses direction and reaches upper floor.
+    for i in range(risers_per_flight):
+        z_top = half_rise + (i + 1) * rise
+        y = landing_y - (i + 1) * tread_depth
+
+        add_box(
+            doc, stairs, "Stair_Flight_2_Tread_{:02d}".format(i + 1),
+            stair_x2, y, z_top - tread_thickness,
+            flight_width, tread_depth, tread_thickness, wood
+        )
+
+        add_box(
+            doc, stairs, "Stair_Flight_2_Riser_{:02d}".format(i + 1),
+            stair_x2, y, z_top - rise,
+            flight_width, 30.0, rise, riser_color
+        )
+
+    # Top landing at upper floor elevation.
+    add_box(
+        doc, stairs, "Stair_Top_Landing",
+        stair_x1, start_y - 300.0, total_rise - tread_thickness,
+        flight_width * 2.0, 400.0,
+        tread_thickness, wood
+    )
+
+    doc.recompute()
+
+    # Show generated groups and save.
+    for group in (balcony, stairs):
+        group.Visibility = True
+        for obj in group.Group:
+            obj.Visibility = True
+
+    Gui.activeDocument().activeView().viewAxonometric()
+    Gui.activeDocument().activeView().fitAll()
+    doc.recompute()
+    doc.save()
+
+    log("BUILD_STATUS=SUCCESS")
+    log("OUTPUT=" + OUTPUT)
+    log("BALCONY_WIDTH_MM=2200")
+    log("BALCONY_PROJECTION_MM=1500")
+    log("BALCONY_RAILING_HEIGHT_MM=1050")
+    log("STAIR_TYPE=U_SHAPED_CONCEPTUAL")
+    log("STAIR_TREADS=18")
+    log("STAIR_RISERS=18")
+    log("STAIR_TOTAL_RISE_MM=" + str(total_rise))
+    log("BALCONY_OBJECTS=" + str(len(balcony.Group)))
+    log("STAIR_OBJECTS=" + str(len(stairs.Group)))
+
+except Exception:
+    log("BUILD_STATUS=FAILED")
+    log(traceback.format_exc())
+    raise

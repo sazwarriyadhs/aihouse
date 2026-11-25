@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, House, LoaderCircle } from "lucide-react";
 import { createProject, type CreateProjectInput } from "@/lib/api/projects";
+import { houseStyles } from "@/lib/house-styles";
+import DashboardShell from "@/components/dashboard-shell";
 
 const initialForm: CreateProjectInput = {
   name: "",
@@ -28,12 +31,24 @@ const orientations = [
 ];
 
 export default function NewProjectPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewProjectContent />
+    </Suspense>
+  );
+}
+
+function NewProjectContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const styleId = searchParams.get("style");
+  const selectedStyle =
+    houseStyles.find((style) => style.id === styleId) ?? null;
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const area = form.land_width_m * form.land_depth_m;
+const area = form.land_width_m * form.land_depth_m;
 
   function update<K extends keyof CreateProjectInput>(
     key: K,
@@ -70,6 +85,13 @@ export default function NewProjectPage() {
       name: form.name.trim(),
       description: form.description.trim(),
       location: form.location.trim(),
+      ...(selectedStyle
+        ? {
+            design_style_id: selectedStyle.id,
+            design_style_name: selectedStyle.name,
+            design_style_image: selectedStyle.image,
+          }
+        : {}),
     });
 
     setSubmitting(false);
@@ -84,7 +106,10 @@ export default function NewProjectPage() {
   }
 
   return (
-    <main className="project-create-page">
+
+    <DashboardShell activeItem="My Projects" breadcrumb="Create Project">
+
+      <main className="project-create-page">
       <div className="project-create-container">
         <Link href="/" className="project-back-link">
           <ArrowLeft size={17} /> Back to Dashboard
@@ -96,6 +121,25 @@ export default function NewProjectPage() {
           <h1>Let&apos;s build your dream home.</h1>
           <p>Start with your project details and land dimensions.</p>
         </div>
+
+        {selectedStyle && (
+          <section className="project-selected-style" aria-label="Selected house style">
+            <div className="project-selected-style-image">
+              <Image
+                src={selectedStyle.image}
+                alt={`${selectedStyle.name} house style`}
+                fill
+                sizes="112px"
+              />
+            </div>
+            <div className="project-selected-style-copy">
+              <span>YOUR SELECTED HOUSE STYLE</span>
+              <strong>{selectedStyle.name}</strong>
+              <p>{selectedStyle.description}</p>
+              <Link href="/design-studio">Change style</Link>
+            </div>
+          </section>
+        )}
 
         <form className="project-form" onSubmit={handleSubmit}>
           <section className="project-form-section">
@@ -254,5 +298,6 @@ export default function NewProjectPage() {
         </form>
       </div>
     </main>
+    </DashboardShell>
   );
 }

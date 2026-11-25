@@ -1,0 +1,226 @@
+import FreeCAD as App
+import Part
+import math
+import json
+import os
+import traceback
+
+SOURCE = r"D:\ai-house-generator\backups\azwar-house-pre-v7-model\canonical-model-v6.json"
+OUTPUT = r"D:\ai-house-generator\exports\azwar-house\Azwar_House_3D.FCStd"
+LOG = r"D:\ai-house-generator\exports\azwar-house\build-log.txt"
+
+def log(message):
+    with open(LOG, "a", encoding="utf-8") as f:
+        f.write(str(message) + "\n")
+
+def find_building(node):
+    if isinstance(node, dict):
+        b = node.get("building")
+        if isinstance(b, dict) and isinstance(b.get("floor_plans"), list):
+            return b
+        for value in node.values():
+            found = find_building(value)
+            if found:
+                return found
+    elif isinstance(node, list):
+        for value in node:
+            found = find_building(value)
+            if found:
+                return found
+    return None
+
+def mm(value):
+    return float(value) * 1000.0
+
+def add_feature(doc, group, name, shape, color):
+    if shape.isNull() or not shape.isValid():
+        raise ValueError("Invalid geometry: " + name)
+    obj = doc.addObject("Part::Feature", name)
+    obj.Shape = shape
+    obj.ViewObject.ShapeColor = color
+    obj.ViewObject.LineColor = (0.12, 0.12, 0.12)
+    group.addObject(obj)
+    return obj
+
+def make_slab(doc, group, footprint, z, thickness, name):
+    points = [
+        App.Vector(mm(p["x_m"]), mm(p["y_m"]), mm(z))
+        for p in footprint
+    ]
+    if len(points) < 3:
+        raise ValueError("Footprint requires at least 3 points")
+    points.append(points[0])
+    wire = Part.makePolygon(points)
+    face = Part.Face(wire)
+    shape = face.extrude(App.Vector(0, 0, -mm(thickness)))
+    return add_feature(
+        doc, group, name, shape, (0.72, 0.72, 0.70)
+    )
+
+def make_wall(doc, group, wall, doors, windows, z, height, floor_no):
+    x1 = mm(wall["x1_m"])
+    y1 = mm(wall["y1_m"])
+    x2 = mm(wall["x2_m"])
+    y2 = mm(wall["y2_m"])
+    thickness = mm(wall["thickness_m"])
+
+    dx = x2 - x1
+    dy = y2 - y1
+    length = math.hypot(dx, dy)
+    if length <= 0:
+        raise ValueError("Zero-length wall: " + wall["id"])
+
+    shape = Part.makeBox(
+        length, thickness, mm(height),
+        App.Vector(0, -thickness / 2.0, 0)
+    )
+
+    for opening in doors + windows:
+        offset = mm(opening["offset_m"])
+        width = mm(opening["width_m"])
+        opening_height = mm(opening["height_m"])
+        sill = mm(opening.get("sill_height_m", 0))
+
+        cutter = Part.makeBox(
+            width, thickness * 3.0, opening_height,
+            App.Vector(offset, -thickness * 1.5, sill)
+        )
+        shape = shape.cut(cutter)
+
+    angle = math.degrees(math.atan2(dy, dx))
+    shape.rotate(
+        App.Vector(0, 0, 0),
+        App.Vector(0, 0, 1),
+        angle
+    )
+    shape.translate(App.Vector(x1, y1, mm(z)))
+
+    safe_id = "".join(
+        c if c.isalnum() else "_" for c in wall["id"]
+    )
+    return add_feature(
+        doc, group,
+        "Wall_F{}_{}".format(floor_no, safe_id),
+        shape,
+        (0.91, 0.89, 0.83)
+    )
+
+try:
+    if os.path.exists(LOG):
+        os.remove(LOG)
+
+    with open(SOURCE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    building = find_building(data)
+    if not building:
+        raise ValueError("Canonical model building/floor_plans not found")
+
+    plans = building["floor_plans"]
+    footprint = building["footprint"]
+    construction = building["construction"]
+
+    wall_height = float(construction["wall_height_m"])
+    slab_thickness = float(construction["slab_thickness_m"])
+    floor_to_floor = float(construction["floor_to_floor_height_m"])
+
+    if not plans or not footprint:
+        raise ValueError("Floor plans or footprint is empty")
+
+    doc = App.newDocument("Azwar_House_3D")
+
+    root = doc.addObject(
+        "App::DocumentObjectGroup", "AzwarHouse"
+    )
+    root.Label = "Azwar House - Scandinavian Modern"
+
+    structure = doc.addObject(
+        "App::DocumentObjectGroup", "Structure"
+    )
+    structure.Label = "Building Structure"
+    root.addObject(structure)
+
+    # Ground floor slab.
+    ground_group = doc.addObject(
+        "App::DocumentObjectGroup", "GroundFloor"
+    )
+    ground_group.Label = "Floor 1 - Ground Floor"
+    structure.addObject(ground_group)
+
+    make_slab(
+        doc, ground_group, footprint, 0,
+        slab_thickness, "GroundFloor_Slab"
+    )
+
+    # Upper floor slab.
+    if len(plans) > 1:
+        upper_slab_group = doc.addObject(
+            "App::DocumentObjectGroup", "UpperSlab"
+        )
+        upper_slab_group.Label = "Floor 2 - Upper Floor Slab"
+        structure.addObject(upper_slab_group)
+
+        make_slab(
+            doc, upper_slab_group, footprint,
+            floor_to_floor, slab_thickness,
+            "UpperFloor_Slab"
+        )
+
+    total_walls = 0
+    total_doors = 0
+    total_windows = 0
+
+    for plan in plans:
+        floor_no = int(plan["floor_number"])
+        z = (floor_no - 1) * floor_to_floor
+
+        floor_group = doc.addObject(
+            "App::DocumentObjectGroup",
+            "Floor_{}".format(floor_no)
+        )
+        floor_group.Label = "Floor {} - {}".format(
+            floor_no, plan.get("name", "Floor")
+        )
+        structure.addObject(floor_group)
+
+        for wall in plan.get("walls", []):
+            wall_id = wall["id"]
+            doors = [
+                o for o in plan.get("doors", [])
+                if o.get("wall_id") == wall_id
+            ]
+            windows = [
+                o for o in plan.get("windows", [])
+                if o.get("wall_id") == wall_id
+            ]
+
+            make_wall(
+                doc, floor_group, wall,
+                doors, windows, z,
+                wall_height, floor_no
+            )
+            total_walls += 1
+
+        total_doors += len(plan.get("doors", []))
+        total_windows += len(plan.get("windows", []))
+
+    doc.recompute()
+
+    Gui.activeDocument().activeView().viewAxonometric()
+    Gui.activeDocument().activeView().fitAll()
+
+    doc.recompute()
+    doc.saveAs(OUTPUT)
+
+    log("BUILD_STATUS=SUCCESS")
+    log("OUTPUT=" + OUTPUT)
+    log("FLOORS=" + str(len(plans)))
+    log("WALLS=" + str(total_walls))
+    log("DOORS=" + str(total_doors))
+    log("WINDOWS=" + str(total_windows))
+    log("OBJECTS=" + str(len(doc.Objects)))
+
+except Exception:
+    log("BUILD_STATUS=FAILED")
+    log(traceback.format_exc())
+    raise

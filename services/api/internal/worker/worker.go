@@ -34,9 +34,43 @@ type Worker struct {
 	minIdle     time.Duration
 
 	// Configurable per worker instance for deterministic lease tests.
-	lockTTL    time.Duration
-	lockRenew  time.Duration
-	processJob func(context.Context, string, string) error
+	lockTTL          time.Duration
+	lockRenew        time.Duration
+	processJob       func(context.Context, string, string) error
+	processJobWithID func(context.Context, string, string, string) error
+}
+
+// PermanentError marks a job error that must not be retried.
+type PermanentError struct {
+	Err error
+}
+
+func (e *PermanentError) Error() string {
+	if e == nil || e.Err == nil {
+		return "permanent job error"
+	}
+	return e.Err.Error()
+}
+
+func (e *PermanentError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.Err
+}
+
+// Permanent wraps an error to mark it as non-retryable.
+func Permanent(err error) error {
+	if err == nil {
+		return nil
+	}
+	return &PermanentError{Err: err}
+}
+
+// IsPermanent reports whether an error is marked as non-retryable.
+func IsPermanent(err error) bool {
+	var permanentErr *PermanentError
+	return errors.As(err, &permanentErr)
 }
 
 var startJobScript = redis.NewScript(`
@@ -121,6 +155,41 @@ return 1
 `)
 
 func New(cfg queue.Config) *Worker {
+	return NewWithHandler(cfg, func(_ context.Context, jobType, payload string) error {
+		return validateJob(jobType, payload)
+	})
+}
+
+func NewWithHandler(
+	cfg queue.Config,
+	handler func(context.Context, string, string) error,
+) *Worker {
+	if handler == nil {
+		handler = func(_ context.Context, jobType, payload string) error {
+			return validateJob(jobType, payload)
+		}
+	}
+
+	return newWorker(cfg, handler, nil)
+}
+
+// NewWithJobHandler registers a handler that also receives the queue job ID.
+func NewWithJobHandler(
+	cfg queue.Config,
+	handler func(context.Context, string, string, string) error,
+) *Worker {
+	if handler == nil {
+		return New(cfg)
+	}
+
+	return newWorker(cfg, nil, handler)
+}
+
+func newWorker(
+	cfg queue.Config,
+	handler func(context.Context, string, string) error,
+	handlerWithID func(context.Context, string, string, string) error,
+) *Worker {
 	consumer := os.Getenv("REDIS_WORKER_CONSUMER")
 	if consumer == "" {
 		host, _ := os.Hostname()
@@ -140,7 +209,6 @@ func New(cfg queue.Config) *Worker {
 			minIdle = time.Duration(parsed) * time.Millisecond
 		}
 	}
-
 	client := redis.NewClient(&redis.Options{
 		Addr:         cfg.Host + ":" + cfg.Port,
 		Password:     cfg.Password,
@@ -153,18 +221,16 @@ func New(cfg queue.Config) *Worker {
 	})
 
 	return &Worker{
-		redis:       client,
-		consumer:    consumer,
-		maxAttempts: maxAttempts,
-		minIdle:     minIdle,
-		lockTTL:     lockTTL,
-		lockRenew:   lockRenew,
-		processJob: func(_ context.Context, jobType, payload string) error {
-			return validateJob(jobType, payload)
-		},
+		redis:            client,
+		consumer:         consumer,
+		maxAttempts:      maxAttempts,
+		minIdle:          minIdle,
+		lockTTL:          lockTTL,
+		lockRenew:        lockRenew,
+		processJob:       handler,
+		processJobWithID: handlerWithID,
 	}
 }
-
 func (w *Worker) Close() error {
 	return w.redis.Close()
 }
@@ -360,15 +426,19 @@ func (w *Worker) process(ctx context.Context, message redis.XMessage) error {
 	if attempts == 0 {
 		return w.ack(workCtx, message.ID)
 	}
+	var processErr error
 
-	handler := w.processJob
-	if handler == nil {
-		handler = func(_ context.Context, jobType, payload string) error {
-			return validateJob(jobType, payload)
+	if w.processJobWithID != nil {
+		processErr = w.processJobWithID(workCtx, jobID, jobType, payload)
+	} else {
+		handler := w.processJob
+		if handler == nil {
+			handler = func(_ context.Context, jobType, payload string) error {
+				return validateJob(jobType, payload)
+			}
 		}
+		processErr = handler(workCtx, jobType, payload)
 	}
-
-	processErr := handler(workCtx, jobType, payload)
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
@@ -377,7 +447,7 @@ func (w *Worker) process(ctx context.Context, message redis.XMessage) error {
 	}
 
 	if processErr != nil {
-		if attempts >= int64(w.maxAttempts) {
+		if attempts >= int64(w.maxAttempts) || IsPermanent(processErr) {
 			failedAt := time.Now().UTC().Format(time.RFC3339Nano)
 			markerKey := "ahg:jobs:dlq:" + jobID
 

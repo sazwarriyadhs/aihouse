@@ -1,52 +1,33 @@
 import Link from "next/link";
 import Image from "next/image";
+import DashboardShell from "@/components/dashboard-shell";
 import { getProjects } from "@/lib/api/projects";
 import {
   ArrowRight,
-  Bell,
   Box,
   Calculator,
-  ChevronDown,
   ChevronRight,
-  CircleHelp,
   Clock3,
-  Compass,
-  FileText,
   FolderKanban,
   House,
   Layers3,
-  Map,
-  Menu,
   Plus,
-  Search,
-  Settings2,
   Sparkles,
   WandSparkles,
 } from "lucide-react";
 
-const navigation = [
-  { label: "Dashboard", icon: House, active: true, href: "/" },
-  { label: "My Projects", icon: FolderKanban, href: "#projects" },
-  { label: "AI Design Studio", icon: WandSparkles, href: "#design-studio" },
-  { label: "Floor Planner", icon: Layers3, href: "/floor-planner" },
-  { label: "3D Visualization", icon: Box, href: "/visualization" },
-  { label: "CAD & Drawings", icon: Compass, href: "/cad" },
-  { label: "BOQ & RAB", icon: Calculator, href: "/boq-rab" },
-  { label: "Documents", icon: FileText, href: "/documents" },
-];
-
 const quickActions = [
-  { title: "AI House Design", description: "Create a home from your land", icon: WandSparkles, href: "#design-studio" },
+  { title: "AI House Design", description: "Create a home from your land", icon: WandSparkles, href: "/design-studio" },
   { title: "Floor Planner", description: "Plan rooms and dimensions", icon: Layers3, href: "/floor-planner" },
   { title: "3D Visualization", description: "Explore your future home", icon: Box, href: "/visualization" },
   { title: "Quick RAB", description: "Estimate construction costs", icon: Calculator, href: "/boq-rab" },
 ];
 
 const styles = [
-  { name: "Modern Minimalist", detail: "Clean lines · Open spaces", tone: "style-minimal" },
-  { name: "Tropical Modern", detail: "Natural light · Ventilation", tone: "style-tropical" },
-  { name: "Scandinavian", detail: "Warm · Simple · Functional", tone: "style-scandi" },
-  { name: "Japanese", detail: "Calm · Balanced · Natural", tone: "style-japanese" },
+  { name: "Modern Minimalist", detail: "Clean lines · Open spaces", tone: "style-minimal", image: "/assets/house-types/01_Rumah_Minimalis_Modern.jpg" },
+  { name: "Tropical Modern", detail: "Natural light · Ventilation", tone: "style-tropical", image: "/assets/house-types/12_Rumah_Modern_Tropis.jpg" },
+  { name: "Scandinavian", detail: "Warm · Simple · Functional", tone: "style-scandi", image: "/assets/house-types/03_Rumah_Scandinavian.jpg" },
+  { name: "Japanese", detail: "Calm · Balanced · Natural", tone: "style-japanese", image: "/assets/house-types/06_Rumah_Jepang_Tradisional_Minka.jpg" },
 ];
 
 function SectionTitle({
@@ -100,105 +81,8 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <Link href="/" className="brand">
-          <Image
-            src="/branding/dasboard_logo.png"
-            alt="AI House Generator"
-            width={176}
-            height={56}
-            priority
-            className="brand-logo"
-          />
-        </Link>
+    <DashboardShell activeItem="Dashboard" breadcrumb="Dashboard">
 
-        <div className="workspace-switcher">
-          <div className="workspace-avatar">A</div>
-          <div className="workspace-copy">
-            <strong>My Workspace</strong>
-            <span>Personal account</span>
-          </div>
-          <ChevronDown size={16} />
-        </div>
-
-        <div className="nav-label">WORKSPACE</div>
-        <nav className="main-nav" aria-label="Main navigation">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            return (
-              <a
-                key={item.label}
-                href={item.href}
-                className={`nav-item ${item.active ? "active" : ""}`}
-                aria-current={item.active ? "page" : undefined}
-              >
-                <Icon size={18} strokeWidth={1.8} />
-                <span>{item.label}</span>
-                {item.active && <span className="active-indicator" />}
-              </a>
-            );
-          })}
-        </nav>
-
-        <div className="nav-label tools-label">PREFERENCES</div>
-        <nav className="main-nav">
-          <Link href="/materials" className="nav-item">
-            <Map size={18} strokeWidth={1.8} />
-            <span>Materials Library</span>
-          </Link>
-          <a href="#settings" className="nav-item">
-            <Settings2 size={18} strokeWidth={1.8} />
-            <span>Settings</span>
-          </a>
-          <a href="#help" className="nav-item">
-            <CircleHelp size={18} strokeWidth={1.8} />
-            <span>Help & Support</span>
-          </a>
-        </nav>
-
-        <div className="sidebar-bottom">
-          <div className="upgrade-card">
-            <div className="upgrade-icon"><Sparkles size={17} /></div>
-            <strong>Your next home starts here.</strong>
-            <p>Turn your land into a thoughtful home design.</p>
-            <a href="#design-studio">Explore AI Design <ArrowRight size={14} /></a>
-          </div>
-          <div className="sidebar-footer">
-            <span className="online-dot" />
-            All systems operational
-          </div>
-        </div>
-      </aside>
-
-      <section className="main-area">
-        <header className="topbar">
-          <div className="mobile-brand">
-            <Image src="/branding/logo_kotak.png" alt="AHG" width={36} height={36} />
-            <strong>AI HOUSE GENERATOR</strong>
-          </div>
-          <button className="mobile-menu" aria-label="Open navigation"><Menu size={21} /></button>
-          <div className="breadcrumb">
-            Workspace <ChevronRight size={15} /> <strong>Dashboard</strong>
-          </div>
-          <div className="topbar-actions">
-            <label className="global-search">
-              <Search size={17} />
-              <input type="search" placeholder="Search projects, designs..." aria-label="Search" />
-              <kbd>⌘ K</kbd>
-            </label>
-            <button className="icon-button notification-button" aria-label="Notifications">
-              <Bell size={19} />
-              <span />
-            </button>
-            <div className="topbar-divider" />
-            <button className="profile-button">
-              <span className="profile-avatar">A</span>
-              <span className="profile-info"><strong>My Account</strong><small>Workspace owner</small></span>
-              <ChevronDown size={15} />
-            </button>
-          </div>
-        </header>
 
         <div className="dashboard-content">
           <section className="welcome-row">
@@ -240,7 +124,7 @@ export default async function DashboardPage() {
                     title="Recent Projects"
                     description="Pick up where you left off."
                   />
-                  <a href="#design-studio" className="text-link">View all <ArrowRight size={15} /></a>
+                  <Link href="/design-studio" className="text-link">View all <ArrowRight size={15} /></Link>
                 </div>
 
                 {projectsError ? (
@@ -265,14 +149,19 @@ export default async function DashboardPage() {
                   </div>
                   <h3>Your first project begins here</h3>
                   <p>No projects yet. Start with your land dimensions and let&apos;s design a home around your life.</p>
-                  <a href="#design-studio" className="secondary-button">
+                  <Link href="/design-studio" className="secondary-button">
                     Start your first design <ArrowRight size={16} />
-                  </a>
+                  </Link>
                 </div>
                 ) : (
                   <div className="project-list">
                     {projects.map((project) => (
-                      <article className="project-list-item" key={project.id}>
+                      <Link
+                        href={`/projects/${encodeURIComponent(project.id)}`}
+                        className="project-list-item"
+                        key={project.id}
+                        aria-label={`Open project ${project.name}`}
+                      >
                         <div className="project-list-main">
                           <div className="project-list-title">
                             <h3>{project.name}</h3>
@@ -294,7 +183,7 @@ export default async function DashboardPage() {
                             })}
                           </small>
                         </div>
-                      </article>
+                      </Link>
                     ))}
                   </div>
                 )}
@@ -355,7 +244,7 @@ export default async function DashboardPage() {
                     <ChevronRight size={16} />
                   </div>
                 </div>
-                <a href="#design-studio" className="workflow-cta">Start guided design <ArrowRight size={15} /></a>
+                <Link href="/design-studio" className="workflow-cta">Start guided design <ArrowRight size={15} /></Link>
               </section>
 
               <section className="panel styles-panel">
@@ -364,16 +253,23 @@ export default async function DashboardPage() {
                 </div>
                 <div className="style-list">
                   {styles.map((style) => (
-                    <a href="#design-studio" className="style-item" key={style.name}>
+                    <Link href="/design-studio" className="style-item" key={style.name}>
                       <span className={`style-preview ${style.tone}`}>
-                        <span /><span /><span />
-                      </span>
+  <Image
+    src={style.image}
+    alt={`${style.name} house design`}
+    width={176}
+    height={120}
+    className="style-image"
+    sizes="88px"
+  />
+</span>
                       <span className="style-copy"><strong>{style.name}</strong><small>{style.detail}</small></span>
                       <ChevronRight size={16} />
-                    </a>
+                    </Link>
                   ))}
                 </div>
-                <a href="#design-studio" className="all-styles-link">Explore all design styles <ArrowRight size={14} /></a>
+                <Link href="/design-studio" className="all-styles-link">Explore all design styles <ArrowRight size={14} /></Link>
               </section>
 
               <div className="help-banner" id="help">
@@ -390,8 +286,6 @@ export default async function DashboardPage() {
             <span>Built for better living.</span>
           </footer>
         </div>
-      </section>
-    </main>
+      </DashboardShell>
   );
 }
-

@@ -1,0 +1,163 @@
+import FreeCAD as App
+import Part
+import json
+import os
+import traceback
+
+SOURCE = r"D:\ai-house-generator\backups\azwar-house-pre-v7-model\canonical-model-v6.json"
+OUTPUT = r"D:\ai-house-generator\exports\azwar-house\Azwar_House_3D.FCStd"
+LOG = r"D:\ai-house-generator\exports\azwar-house\roof-build-log.txt"
+
+def log(s):
+    with open(LOG, "a", encoding="utf-8") as f:
+        f.write(str(s) + "\n")
+
+def find_building(node):
+    if isinstance(node, dict):
+        b = node.get("building")
+        if isinstance(b, dict) and isinstance(b.get("floor_plans"), list):
+            return b
+        for value in node.values():
+            result = find_building(value)
+            if result:
+                return result
+    elif isinstance(node, list):
+        for value in node:
+            result = find_building(value)
+            if result:
+                return result
+    return None
+
+def mm(v):
+    return float(v) * 1000.0
+
+def add_shape(doc, group, name, shape, color):
+    if shape.isNull() or not shape.isValid() or shape.Volume <= 0:
+        raise ValueError("Invalid roof geometry: " + name)
+    obj = doc.addObject("Part::Feature", name)
+    obj.Label = name.replace("_", " ")
+    obj.Shape = shape
+    obj.ViewObject.ShapeColor = color
+    obj.ViewObject.LineColor = (0.08, 0.08, 0.08)
+    group.addObject(obj)
+    return obj
+
+try:
+    if os.path.exists(LOG):
+        os.remove(LOG)
+
+    with open(SOURCE, "r", encoding="utf-8") as f:
+        model = json.load(f)
+
+    building = find_building(model)
+    if not building:
+        raise ValueError("Building model not found")
+
+    footprint = building["footprint"]
+    construction = building["construction"]
+
+    xs = [mm(p["x_m"]) for p in footprint]
+    ys = [mm(p["y_m"]) for p in footprint]
+
+    xmin, xmax = min(xs), max(xs)
+    ymin, ymax = min(ys), max(ys)
+
+    floors = int(building["floors"])
+    wall_h = mm(construction["wall_height_m"])
+    floor_h = mm(construction["floor_to_floor_height_m"])
+    eave_z = (floors - 1) * floor_h + wall_h
+
+    # Scandinavian gable roof: ridge follows the 10 m depth.
+    overhang = 450.0
+    roof_thickness = 150.0
+    ridge_rise = 2300.0
+    ridge_x = (xmin + xmax) / 2.0
+    ridge_z = eave_z + ridge_rise
+
+    y_start = ymin - overhang
+    y_length = (ymax - ymin) + (2.0 * overhang)
+
+    doc = App.openDocument(OUTPUT)
+
+    # Avoid duplicating roof objects if macro is rerun.
+    old_group = doc.getObject("ScandinavianRoof")
+    if old_group:
+        doc.removeObject(old_group.Name)
+        doc.recompute()
+
+    roof_group = doc.addObject(
+        "App::DocumentObjectGroup", "ScandinavianRoof"
+    )
+    roof_group.Label = "Scandinavian Gable Roof"
+
+    charcoal = (0.16, 0.18, 0.20)
+    gable_color = (0.88, 0.85, 0.78)
+
+    def roof_panel(name, eave_x, ridge_x_value):
+        outer_eave = App.Vector(eave_x, y_start, eave_z)
+        outer_ridge = App.Vector(ridge_x_value, y_start, ridge_z)
+        inner_ridge = App.Vector(
+            ridge_x_value, y_start, ridge_z - roof_thickness
+        )
+        inner_eave = App.Vector(
+            eave_x, y_start, eave_z - roof_thickness
+        )
+
+        wire = Part.makePolygon([
+            outer_eave, outer_ridge,
+            inner_ridge, inner_eave, outer_eave
+        ])
+        face = Part.Face(wire)
+        solid = face.extrude(App.Vector(0, y_length, 0))
+        return add_shape(doc, roof_group, name, solid, charcoal)
+
+    roof_panel("Roof_Left_Slope", xmin - overhang, ridge_x)
+    roof_panel("Roof_Right_Slope", xmax + overhang, ridge_x)
+
+    # Triangular gable infill at front and rear ends.
+    gable_points = [
+        App.Vector(xmin, 0, eave_z),
+        App.Vector(xmax, 0, eave_z),
+        App.Vector(ridge_x, 0, ridge_z),
+        App.Vector(xmin, 0, eave_z)
+    ]
+    gable_face = Part.Face(Part.makePolygon(gable_points))
+
+    front_gable = gable_face.extrude(
+        App.Vector(0, 150.0, 0)
+    )
+    front_gable.translate(App.Vector(0, ymin, 0))
+    add_shape(
+        doc, roof_group, "Front_Gable_Infill",
+        front_gable, gable_color
+    )
+
+    rear_gable = gable_face.extrude(
+        App.Vector(0, -150.0, 0)
+    )
+    rear_gable.translate(App.Vector(0, ymax, 0))
+    add_shape(
+        doc, roof_group, "Rear_Gable_Infill",
+        rear_gable, gable_color
+    )
+
+    doc.recompute()
+    Gui.activeDocument().activeView().viewAxonometric()
+    Gui.activeDocument().activeView().fitAll()
+    doc.recompute()
+    doc.save()
+
+    log("BUILD_STATUS=SUCCESS")
+    log("OUTPUT=" + OUTPUT)
+    log("ROOF_TYPE=GABLE")
+    log("ROOF_PANELS=2")
+    log("GABLE_INFILL=2")
+    log("EAVE_HEIGHT_MM=" + str(eave_z))
+    log("RIDGE_HEIGHT_MM=" + str(ridge_z))
+    log("OVERHANG_MM=" + str(overhang))
+    log("ROOF_OBJECTS=" + str(len(roof_group.Group)))
+
+except Exception:
+    log("BUILD_STATUS=FAILED")
+    log(traceback.format_exc())
+    raise

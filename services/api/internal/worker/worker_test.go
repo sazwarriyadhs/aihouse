@@ -371,6 +371,71 @@ func TestProcessCompletesRealJob(t *testing.T) {
 	}
 }
 
+func TestProcessPassesJobIDToHandler(t *testing.T) {
+	client := testRedis(t)
+	w, messages, jobID := newProcessTestJob(t, client, false)
+
+	const expectedType = "design.generate"
+	const expectedPayload = `{"project_id":"integration-test","style":"modern_minimalist"}`
+
+	var (
+		receivedJobID    string
+		receivedJobType  string
+		receivedPayload  string
+		handlerCallCount int
+	)
+
+	w.processJobWithID = func(
+		ctx context.Context,
+		gotJobID string,
+		gotJobType string,
+		gotPayload string,
+	) error {
+		receivedJobID = gotJobID
+		receivedJobType = gotJobType
+		receivedPayload = gotPayload
+		handlerCallCount++
+		return nil
+	}
+
+	if err := w.process(context.Background(), messages[0]); err != nil {
+		t.Fatalf("process job: %v", err)
+	}
+
+	if handlerCallCount != 1 {
+		t.Fatalf("expected handler to run once, got %d", handlerCallCount)
+	}
+
+	if receivedJobID != jobID {
+		t.Fatalf("handler received wrong job ID: got %q want %q", receivedJobID, jobID)
+	}
+
+	if receivedJobType != expectedType {
+		t.Fatalf("handler received wrong job type: got %q want %q", receivedJobType, expectedType)
+	}
+
+	if receivedPayload != expectedPayload {
+		t.Fatalf("handler received wrong payload: got %q want %q", receivedPayload, expectedPayload)
+	}
+
+	status, err := client.HGet(
+		context.Background(),
+		JobPrefix+jobID,
+		"status",
+	).Result()
+	if err != nil || status != "completed" {
+		t.Fatalf("expected completed status, got %q err=%v", status, err)
+	}
+
+	attempts, err := client.HGet(
+		context.Background(),
+		JobPrefix+jobID,
+		"attempts",
+	).Int()
+	if err != nil || attempts != 1 {
+		t.Fatalf("expected one attempt, got %d err=%v", attempts, err)
+	}
+}
 func TestConcurrentDuplicateDeliveryIsSafe(t *testing.T) {
 	client := testRedis(t)
 	w, messages, jobID := newProcessTestJob(t, client, true)
@@ -574,4 +639,76 @@ func TestLeaseLossCancelsHandler(t *testing.T) {
 	).Err(); err != nil {
 		t.Fatalf("cleanup pending message: %v", err)
 	}
+}
+
+func TestProcessPermanentErrorGoesDirectlyToDLQ(t *testing.T) {
+	client := testRedis(t)
+	w, messages, jobID := newProcessTestJob(t, client, false)
+
+	ctx := context.Background()
+	jobKey := JobPrefix + jobID
+	markerKey := "ahg:jobs:dlq:" + jobID
+
+	before, err := client.XLen(ctx, DeadStream).Result()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w.processJobWithID = func(
+		_ context.Context,
+		_ string,
+		_ string,
+		_ string,
+	) error {
+		return Permanent(fmt.Errorf("invalid CAD construction parameters"))
+	}
+
+	if err := w.process(ctx, messages[0]); err != nil {
+		t.Fatalf("process permanent error: %v", err)
+	}
+
+	values, err := client.HGetAll(ctx, jobKey).Result()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if values["status"] != "failed" {
+		t.Fatalf("expected failed status, got %q", values["status"])
+	}
+
+	if values["attempts"] != "1" {
+		t.Fatalf("permanent error must not retry; attempts=%q", values["attempts"])
+	}
+
+	if values["last_error"] != "invalid CAD construction parameters" {
+		t.Fatalf("unexpected last_error: %q", values["last_error"])
+	}
+
+	after, err := client.XLen(ctx, DeadStream).Result()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if after != before+1 {
+		t.Fatalf("expected one new DLQ entry; before=%d after=%d", before, after)
+	}
+
+	marker, err := client.Get(ctx, markerKey).Result()
+	if err != nil || marker == "" {
+		t.Fatalf("expected DLQ marker; marker=%q err=%v", marker, err)
+	}
+
+	entries, err := client.XRange(ctx, DeadStream, marker, marker).Result()
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("expected exactly one DLQ entry; entries=%d err=%v", len(entries), err)
+	}
+
+	if entries[0].Values["job_id"] != jobID {
+		t.Fatalf("wrong DLQ job ID: got=%v want=%s", entries[0].Values["job_id"], jobID)
+	}
+
+	t.Cleanup(func() {
+		_ = client.Del(ctx, markerKey).Err()
+		_ = client.XDel(ctx, DeadStream, marker).Err()
+	})
 }
