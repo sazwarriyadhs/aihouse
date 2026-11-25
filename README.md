@@ -8,8 +8,6 @@
   <strong>AI-assisted residential design and project workflows with an open-source CAD export pipeline.</strong>
 </p>
 
-**AI-assisted residential design and project workflows with an open-source CAD export pipeline.**
-
 AI House Generator (AHG) is a development-stage platform for managing house-design projects, editing structured floor plans, and generating CAD deliverables from versioned design data. The project is being developed by **PT DIGI MEDIA KOMUNIKA**.
 
 The current implementation combines a Next.js web application, a Go API, PostgreSQL, Redis-backed background jobs, and FreeCAD Python automation.
