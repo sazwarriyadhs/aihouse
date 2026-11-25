@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>AI-assisted residential design and project workflows with an open-source CAD export pipeline.</strong>
+  <strong>AI-assisted residential design and project workflows with a FreeCAD-based CAD export pipeline.</strong>
 </p>
 
 AI House Generator (AHG) is a development-stage platform for managing house-design projects, editing structured floor plans, and generating CAD deliverables from versioned design data. The project is being developed by **PT DIGI MEDIA KOMUNIKA**.
@@ -336,24 +336,79 @@ Roadmap items may change as implementation and validation progress.
 
 ---
 
-## Business collaboration
+## Business opportunity
 
-AI House Generator is open to discussions with:
+AI House Generator is being developed to connect early-stage residential design workflows with structured project data and CAD deliverables. The longer-term product direction is to reduce friction between the initial design brief, floor-plan development, technical handoff, and downstream construction activities.
 
-- Architects, architectural studios, and engineering consultants.
-- CAD/BIM and software technology providers.
-- Building-material manufacturers, distributors, and suppliers.
-- Construction companies, contractors, and property developers.
-- Universities, research institutions, and innovation programs.
-- Investors and strategic business partners.
+### Target users and customer segments
 
-Potential collaboration areas include technology integration, joint development, digital product catalogs, material data, construction workflows, research, pilot projects, and commercialization.
+- **Homeowners and individual property owners** — organize house requirements and collaborate around an evolving design.
+- **Architects and architectural studios** — accelerate early-stage layout workflows and manage structured design revisions.
+- **Engineering and design consultants** — use versioned project information as an input to CAD-based review and coordination.
+- **Contractors and construction companies** — explore more consistent handoffs from design information to project execution.
+- **Property developers and real-estate businesses** — evaluate repeatable design workflows for residential projects.
+- **Building-material suppliers and manufacturers** — explore structured product and material information integrations.
+
+These are intended market segments, not a claim of existing customers, signed contracts, or commercial deployments.
+
+### Value proposition and product direction
+
+The platform is designed around a connected workflow:
+
+- Keep project details and floor-plan elements in a structured digital workspace.
+- Preserve design revisions as identifiable versions.
+- Generate initial 2D and 3D CAD deliverables from selected design versions.
+- Create a technical foundation for future AI-assisted design, visualization, material estimation, and construction ecosystem integrations.
+
+The current implementation is an active development-stage foundation. It should not be represented as a fully automated, construction-ready design system.
+
+### Potential business and revenue models
+
+The following are business-model options for validation; none is presented as an already launched or revenue-generating service:
+
+- **SaaS subscriptions** — tiered access for individual users, studios, and business teams.
+- **Usage-based services** — paid CAD exports, processing capacity, or advanced project workflows.
+- **Enterprise licensing** — tailored deployments, integrations, support, and workflow configuration.
+- **Professional services** — implementation, customization, training, and technical integration.
+- **Partner ecosystem** — referral, reseller, or co-delivery arrangements with qualified industry partners.
+- **Data and catalog integrations** — commercial integrations with material suppliers and construction-product providers, subject to data rights and partner agreements.
+
+Pricing, packaging, and go-to-market strategy remain subject to customer discovery and commercial validation.
+
+## Partnership and collaboration
+
+We welcome conversations with organizations that can contribute domain expertise, distribution, technology, pilot environments, or market access.
+
+| Partner profile | Potential collaboration |
+|---|---|
+| Architects and engineering consultants | Workflow validation, design review, domain expertise, and pilot projects |
+| Contractors and construction companies | Practical workflow testing and design-to-construction feedback |
+| Property developers | Residential project pilots and repeatable design workflows |
+| CAD/BIM and software providers | Interoperability, integrations, and joint product development |
+| Material manufacturers and suppliers | Product catalogs, specifications, and material-data integrations |
+| Universities and research institutions | Applied research, AI experimentation, and student or faculty collaboration |
+| Investors and strategic partners | Product development, market access, commercialization, and strategic growth |
+
+### Ways to work together
+
+- **Pilot project:** validate workflows against a clearly scoped real-world use case.
+- **Technology integration:** connect complementary software, APIs, CAD/BIM tools, or product data.
+- **Joint development:** co-design and build capabilities with clearly agreed ownership and responsibilities.
+- **Channel or reseller partnership:** explore distribution and customer acquisition in agreed markets.
+- **Research collaboration:** investigate AI-assisted design, building data, and digital construction workflows.
+- **Investment discussion:** discuss strategic funding and growth opportunities based on product maturity and a mutually agreed business plan.
+
+All partnerships, pilots, integrations, commercial terms, intellectual-property rights, and data responsibilities require separate written agreement. Listing a collaboration opportunity does not imply an existing partnership or endorsement.
+
+### Business contact
 
 **Developed by PT DIGI MEDIA KOMUNIKA**
 
-- Business email: [ptdigimediakomunika@gmail.com](mailto:ptdigimediakomunika@gmail.com)
-- Repository: [github.com/sazwarriyadhs/aihouse](https://github.com/sazwarriyadhs/aihouse)
-- FreeCAD: [freecad.org](https://www.freecad.org/)
+- Business and partnership email: [ptdigimediakomunika@gmail.com](mailto:ptdigimediakomunika@gmail.com)
+- GitHub repository: [github.com/sazwarriyadhs/aihouse](https://github.com/sazwarriyadhs/aihouse)
+- CAD platform: [FreeCAD](https://www.freecad.org/)
+
+For a partnership inquiry, please include your organization, proposed collaboration area, target use case, and preferred next step.
 
 ---
 
