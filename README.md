@@ -5,119 +5,307 @@
 </p>
 
 <p align="center">
-  <strong>AI-assisted residential design and project workflows with a FreeCAD-based CAD export pipeline.</strong>
+  <strong>AI-Assisted Residential Design, Intelligent Project Management & CAD Automation</strong>
 </p>
 
-AI House Generator (AHG) is a development-stage platform for managing house-design projects, editing structured floor plans, and generating CAD deliverables from versioned design data. The project is being developed by **PT DIGI MEDIA KOMUNIKA**.
+<p align="center">
+  <em>From House Design Concepts to Structured CAD Deliverables.</em>
+</p>
 
-The current implementation combines a Next.js web application, a Go API, PostgreSQL, Redis-backed background jobs, and FreeCAD Python automation.
+**AI House Generator (AHG)** is a software platform under development by **PT DIGI MEDIA KOMUNIKA**, designed to connect residential design workflows, structured floor-plan management, and automated CAD document generation.
 
-> **Project status:** Active development. Project management, floor-plan data workflows, and the initial asynchronous CAD export pipeline are implemented in the `feature/cad-export-pipeline` branch. AI-assisted generation, complete architectural documentation, advanced visualization, and production deployment remain future work unless explicitly described as implemented below.
+The platform aims to streamline the journey from initial house-design requirements to structured digital plans and CAD deliverables, while establishing a foundation for future AI-assisted design, visualization, material estimation, and construction ecosystem integration.
+
+The current technical foundation combines a Next.js web application, Go backend services, PostgreSQL, Redis-based background processing, and FreeCAD Python automation.
 
 ---
 
-## What is implemented
+## Table of Contents
 
-### Project and design workflow
+- [Vision](#vision)
+- [Business Overview](#business-overview)
+- [Current Development Status](#current-development-status)
+- [Implemented Features](#implemented-features)
+- [Architecture](#architecture)
+- [Technology Stack](#technology-stack)
+- [Repository Structure](#repository-structure)
+- [Requirements](#requirements)
+- [Local Development Setup](#local-development-setup)
+- [Application API](#application-api)
+- [CAD Export Pipeline](#cad-export-pipeline)
+- [Database and Security](#database-and-security)
+- [Development and Testing](#development-and-testing)
+- [Product Roadmap](#product-roadmap)
+- [Business Model Opportunities](#business-model-opportunities)
+- [Strategic Partnerships](#strategic-partnerships)
+- [Commercial Opportunities](#commercial-opportunities)
+- [Contact and Company Information](#contact-and-company-information)
+- [License and Intellectual Property](#license-and-intellectual-property)
 
-- Web application workspace for browsing and working with house-design projects.
-- Project detail and edit routes.
-- Floor-plan editor workflow and project-scoped floor-plan API routes.
-- Structured floor-plan data for rooms, walls, doors, and windows.
-- Validation of floor-plan identifiers, dimensions, references, and site-boundary constraints.
-- Immutable design-version creation when floor-plan data is saved.
+---
 
-### Asynchronous CAD export
+## Vision
 
-- Dedicated Go worker entry point consuming background jobs.
-- CAD export job type: `cad.export`.
-- Export requests identify the project, design, immutable design version, and target (`2d`, `3d`, or `both`).
-- FreeCAD automation through the embedded Python exporter.
-- Artifact metadata persisted in PostgreSQL, including storage key, SHA-256 checksum, file size, project/design/version references, and export dimension/format.
-- Export execution is separated from the HTTP API process.
+Our vision is to develop an integrated digital platform that makes residential design workflows more accessible, structured, and connected.
 
-**Current generated deliverables**
+AI House Generator is being developed around several long-term objectives:
 
-| Export target | File formats | Status |
+- Simplify early-stage residential design workflows.
+- Connect project requirements with structured floor-plan data.
+- Automate the generation of selected 2D and 3D CAD deliverables.
+- Preserve design history and support traceable revisions.
+- Introduce AI-assisted design and intelligent automation.
+- Connect architects, engineers, contractors, property developers, and material suppliers through digital workflows.
+- Establish a foundation for a broader digital construction ecosystem.
+
+The long-term direction is to evolve beyond a standalone house-design application into an integrated residential design and project technology platform.
+
+---
+
+## Business Overview
+
+AI House Generator is a product initiative of **PT DIGI MEDIA KOMUNIKA**.
+
+The company is developing AHG as a technology product with potential applications across residential design, architecture, engineering, construction, and property development.
+
+### The problem we aim to address
+
+Residential design projects can involve fragmented workflows across:
+
+- Initial customer requirements and design briefs.
+- Floor-plan creation and revisions.
+- Communication between homeowners and design professionals.
+- CAD document preparation.
+- Design version management.
+- Technical coordination between design and construction teams.
+- Material and construction information.
+
+AHG aims to establish a more connected workflow by keeping project information, floor-plan data, and generated CAD deliverables within a structured digital environment.
+
+### Target markets
+
+| Market segment | Potential value |
+|---|---|
+| Homeowners | Organize house requirements and participate in design development |
+| Architects and design studios | Support early-stage layout development and revision management |
+| Engineering consultants | Work with structured design data and CAD deliverables |
+| Contractors | Improve design-information handoff and project coordination |
+| Property developers | Explore repeatable residential design workflows |
+| Building-material suppliers | Integrate product catalogs and material information |
+| Educational institutions | Support digital architecture and engineering learning |
+| Technology companies | Integrate CAD, BIM, AI, and construction-related services |
+
+These are intended market segments. Their inclusion does not imply existing customers, commercial deployments, or signed agreements.
+
+---
+
+## Current Development Status
+
+The project has an implemented foundation for project management, structured floor-plan workflows, immutable design versions, and asynchronous CAD exports.
+
+| Capability | Current status |
+|---|---|
+| Web application foundation | Implemented |
+| Project management workflow | Implemented foundation |
+| Project detail and editing | Implemented |
+| Structured floor-plan workflow | Implemented foundation |
+| Room, wall, door, and window data | Implemented |
+| Design version persistence | Implemented |
+| Background CAD job processing | Implemented foundation |
+| 2D DXF export | Implemented |
+| 2D FCStd export | Implemented |
+| 3D FCStd export | Implemented |
+| 3D STEP export | Implemented foundation |
+| AI-assisted design generation | Planned |
+| Advanced 3D visualization | Planned / expanding |
+| IFC/BIM interoperability | Planned |
+| BOQ and material estimation | Planned |
+
+**Important:** The current CAD exporter is an initial implementation. It does not yet generate a complete construction-ready architectural model. AI-assisted generation and other roadmap capabilities must not be interpreted as production features until implemented and validated.
+
+---
+
+## Implemented Features
+
+### 1. Project Management
+
+The web application provides a foundation for managing residential design projects.
+
+Implemented workflows include:
+
+- Project workspace.
+- Project detail view.
+- Project editing routes.
+- Project-scoped API communication.
+- Structured project data management.
+
+### 2. Structured Floor-Plan Management
+
+The platform supports structured floor-plan data representing:
+
+- Rooms.
+- Walls.
+- Doors.
+- Windows.
+
+The floor-plan workflow includes:
+
+- Element identifiers.
+- Geometric data.
+- Metric dimensions.
+- Wall and opening references.
+- Relevant site-boundary constraints.
+- Input validation.
+- Design version creation.
+
+Saved floor-plan changes are persisted as identifiable design versions.
+
+### 3. Immutable Design Versions
+
+The system establishes a versioned design-data workflow.
+
+Each saved design version can be used as a reference for downstream CAD generation.
+
+This provides a foundation for:
+
+- Design revision tracking.
+- Traceable export inputs.
+- Reproducible CAD generation.
+- Project history management.
+
+### 4. Asynchronous CAD Generation
+
+CAD generation is handled through a dedicated background worker rather than being performed directly inside an HTTP request.
+
+The current pipeline includes:
+
+- CAD export job submission.
+- Redis-backed job processing.
+- Go worker execution.
+- FreeCAD Python automation.
+- Artifact metadata persistence.
+- SHA-256 checksum generation.
+
+### 5. CAD Deliverables
+
+The current exporter supports the following outputs:
+
+| Dimension | Format | Status |
 |---|---|---|
-| 2D | DXF, FCStd | Implemented |
-| 3D | FCStd, STEP | Implemented |
-| 3D | STL | Not currently generated by the exporter |
+| 2D | DXF | Implemented |
+| 2D | FCStd | Implemented |
+| 3D | FCStd | Implemented |
+| 3D | STEP | Implemented foundation |
+| 3D | STL | Not currently generated |
+| BIM | IFC | Not implemented |
 
-The migration schema recognizes STL as an allowed artifact format, but that does **not** mean STL generation is implemented. IFC/BIM export is also not currently implemented.
-
-### Backend foundation
-
-- Go API and worker services.
-- PostgreSQL-backed project, design, design-version, and CAD-artifact data.
-- Embedded SQL migrations.
-- Separate PostgreSQL migration and runtime credentials.
-- Redis integration for background job processing.
-- CAD artifact integrity metadata using SHA-256.
+The database schema recognizes STL as an allowed artifact format, but the current exporter does not generate STL files.
 
 ---
 
 ## Architecture
 
+AI House Generator uses a modular application architecture with separate web, API, database, background-processing, and CAD-generation responsibilities.
+
 ```mermaid
 flowchart TD
-    WEB[Next.js Web Application] --> API[Go HTTP API]
+    USER[User] --> WEB[Next.js Web Application]
+    WEB --> ROUTES[Next.js API Routes]
+    ROUTES --> API[Go HTTP API]
     API --> PG[(PostgreSQL)]
     API --> REDIS[(Redis Job Queue)]
     REDIS --> WORKER[Go Background Worker]
     WORKER --> CAD[FreeCAD Python Exporter]
-    CAD --> FILES[CAD Artifact Storage]
+    CAD --> STORAGE[CAD Artifact Storage]
     WORKER --> PG
-    WEB --> ROUTES[Next.js Project API Routes]
-    ROUTES --> API
+    WEB --> PROJECTS[Project Workspace]
 ```
 
-The API handles application requests and data persistence. CAD generation runs asynchronously in the worker so that model generation does not need to run inside an HTTP request.
+### Architecture principles
 
-### Technology stack
+- Separate frontend and backend responsibilities.
+- Keep project data in a structured database.
+- Use immutable design versions as export references.
+- Run CAD generation asynchronously.
+- Persist artifact metadata and checksums.
+- Keep generated files separate from application source code.
+- Support future service integrations through modular architecture.
 
-| Layer | Technology |
-|---|---|
-| Web application | Next.js, React, TypeScript |
-| Package management | pnpm workspaces |
-| Backend API | Go |
-| Background processing | Go worker, Redis |
-| Database | PostgreSQL |
-| CAD automation | FreeCAD Python API |
-| 2D CAD output | DXF |
-| 3D exchange output | FCStd, STEP |
-| Mobile workspace | Flutter project scaffold |
+### CAD export workflow
+
+```mermaid
+flowchart TD
+    A[User requests CAD export] --> B[Go API validates request]
+    B --> C[Create background job]
+    C --> D[Redis Queue]
+    D --> E[Go Worker]
+    E --> F[Load immutable design version]
+    F --> G[FreeCAD Python Exporter]
+    G --> H[Generate CAD files]
+    H --> I[Validate file existence and size]
+    I --> J[Calculate SHA-256]
+    J --> K[Save artifact metadata]
+    K --> L[Export completed]
+```
 
 ---
 
-## Repository layout
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js |
+| UI framework | React |
+| Frontend language | TypeScript |
+| Package manager | pnpm |
+| Backend | Go |
+| Database | PostgreSQL |
+| Background queue | Redis |
+| CAD automation | FreeCAD Python API |
+| 2D CAD | DXF |
+| 3D CAD | FCStd, STEP |
+| Mobile workspace | Flutter project scaffold |
+| Container environment | Docker-compatible runtime |
+
+---
+
+## Repository Structure
 
 ```text
 ai-house-generator/
+│
 ├── apps/
-│   ├── web/                         # Next.js web application
-│   └── mobile/                      # Flutter mobile application
+│   ├── web/
+│   │   ├── public/
+│   │   │   └── branding/
+│   │   └── src/
+│   │       └── app/
+│   │
+│   └── mobile/
+│
 ├── services/
 │   ├── api/
 │   │   ├── cmd/
-│   │   │   ├── server/              # HTTP API entry point
-│   │   │   └── worker/              # Background worker entry point
+│   │   │   ├── server/
+│   │   │   └── worker/
 │   │   ├── internal/
-│   │   │   ├── cad/                 # CAD executor, repository, exporter
-│   │   │   ├── database/            # PostgreSQL configuration
-│   │   │   ├── projects/            # Project and floor-plan workflows
-│   │   │   ├── queue/               # Redis queue integration
-│   │   │   └── worker/              # Job processing
-│   │   └── migrations/              # Embedded SQL migrations
-│   └── ai/                          # AI service workspace
-├── docs/                            # Project documentation
-├── add_azwar_roof.FCMacro           # Standalone FreeCAD macro
-├── add_azwar_stairs_balcony.FCMacro # Standalone FreeCAD macro
+│   │   │   ├── cad/
+│   │   │   ├── database/
+│   │   │   ├── projects/
+│   │   │   ├── queue/
+│   │   │   └── worker/
+│   │   └── migrations/
+│   │
+│   └── ai/
+│
+├── docs/
+├── add_azwar_roof.FCMacro
+├── add_azwar_stairs_balcony.FCMacro
 ├── README.md
 └── .env.example
 ```
 
-The standalone FreeCAD macros are separate from the worker's embedded exporter. Their presence in the repository should not be interpreted as proof that roof, stair, or balcony generation is part of the current automated export pipeline.
+The standalone roof, stairs, and balcony macros are separate from the current embedded worker exporter. Their presence does not mean these components are already included in the automated CAD export workflow.
 
 ---
 
@@ -126,113 +314,126 @@ The standalone FreeCAD macros are separate from the worker's embedded exporter. 
 | Dependency | Requirement |
 |---|---|
 | Node.js | `>=22.13.0` |
-| pnpm | `12.22.0` (declared package manager) |
-| Go | `1.25.0` (module version) |
+| pnpm | `12.22.0` |
+| Go | `1.25.0` |
 | PostgreSQL | 17 |
-| Redis | Required for background job processing |
-| FreeCAD | Required for CAD export execution |
+| Redis | Required for background jobs |
+| FreeCAD | Required for CAD export |
 | Flutter SDK | Required only for mobile development |
+| Docker | Recommended for local infrastructure |
 
-Docker Desktop or another Docker-compatible runtime is recommended for local PostgreSQL and Redis services.
+The exact FreeCAD Python executable path depends on the local installation.
 
 ---
 
-## Local development
+## Local Development Setup
 
-The commands below assume Windows PowerShell and a local development environment. Start PostgreSQL and Redis before starting the API and worker.
+The following instructions assume Windows PowerShell.
 
-### 1. Configure environment
+### 1. Clone the repository
 
-Create a root `.env` file based on `.env.example`.
+```powershell
+git clone https://github.com/sazwarriyadhs/aihouse.git
+cd aihouse
+```
 
-At minimum, configure the PostgreSQL bootstrap, migrator, and runtime credentials. Review the CAD settings as well:
+For development on the current CAD pipeline:
+
+```powershell
+git checkout feature/cad-export-pipeline
+```
+
+### 2. Configure environment variables
+
+Create a local `.env` file based on `.env.example`.
+
+Configure the required database, Redis, and CAD settings.
 
 | Variable | Purpose |
 |---|---|
-| `POSTGRES_DB` | Application database name |
-| `POSTGRES_HOST` / `POSTGRES_PORT` | PostgreSQL connection |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` | Bootstrap account for database initialization |
-| `POSTGRES_MIGRATOR_USER` / `POSTGRES_MIGRATOR_PASSWORD` | Migration account |
-| `POSTGRES_RUNTIME_USER` / `POSTGRES_RUNTIME_PASSWORD` | Restricted application/worker account |
+| `POSTGRES_DB` | Database name |
+| `POSTGRES_HOST` | PostgreSQL host |
+| `POSTGRES_PORT` | PostgreSQL port |
+| `POSTGRES_USER` | Database bootstrap account |
+| `POSTGRES_PASSWORD` | Bootstrap account password |
+| `POSTGRES_MIGRATOR_USER` | Migration account |
+| `POSTGRES_MIGRATOR_PASSWORD` | Migration password |
+| `POSTGRES_RUNTIME_USER` | Restricted runtime account |
+| `POSTGRES_RUNTIME_PASSWORD` | Runtime password |
 | `CAD_STORAGE_ROOT` | CAD artifact storage directory |
-| `FREECAD_PYTHON` | Path to the Python executable that can import FreeCAD modules |
+| `FREECAD_PYTHON` | FreeCAD-compatible Python executable |
 
-The example FreeCAD path in `.env.example` is Windows-specific. Set it to the actual FreeCAD Python executable on your machine.
+The example FreeCAD path in `.env.example` is Windows-specific. Update it according to your installation.
 
 Never commit real credentials, tokens, private keys, database dumps, or local environment files.
 
-### 2. Install JavaScript dependencies
-
-From the repository root:
+### 3. Install dependencies
 
 ```powershell
 pnpm install
 ```
 
-### 3. Run the web application
-
-From the repository root:
+### 4. Start the web application
 
 ```powershell
 pnpm --filter ./apps/web dev
 ```
 
-Use the local URL printed by Next.js in the terminal.
+Use the local URL printed by Next.js.
 
-### 4. Run the Go API
+### 5. Start the Go API
 
-From the repository root:
+Open a separate PowerShell terminal:
 
 ```powershell
 Push-Location .\services\api
 go run ./cmd/server
 ```
 
-The API's default local base URL in the web route configuration is:
+The default local API base URL configured in the web route is:
 
 ```text
 http://127.0.0.1:8097
 ```
 
-If your API uses another address, configure the web application's `API_BASE_URL` accordingly.
+Configure `API_BASE_URL` if your API runs on a different address.
 
-### 5. Run the background worker
+### 6. Start the background worker
 
-In a separate PowerShell terminal:
+Open another PowerShell terminal:
 
 ```powershell
 Push-Location .\services\api
 go run ./cmd/worker
 ```
 
-The worker requires reachable PostgreSQL and Redis services and a working FreeCAD Python executable for CAD export jobs.
+The worker requires reachable PostgreSQL and Redis services, as well as a working FreeCAD Python executable for CAD export jobs.
 
 ---
 
-## Project and floor-plan API
+## Application API
 
-The web application includes project-scoped API routes that forward requests to the Go API.
+The web application includes project-scoped API routes that forward requests to the Go backend.
 
-| Method | Web route | Purpose |
+| Method | Route | Description |
 |---|---|---|
-| `PUT` | `/api/projects/:id` | Update project |
-| `GET` | `/api/projects/:id/floor-plans` | Read current floor-plan data |
-| `PUT` | `/api/projects/:id/floor-plans` | Validate and save floor-plan data as a new design version |
+| PUT | `/api/projects/:id` | Update project |
+| GET | `/api/projects/:id/floor-plans` | Retrieve floor-plan data |
+| PUT | `/api/projects/:id/floor-plans` | Validate and save floor-plan data |
 
-The corresponding backend API routes are under `/api/v1/projects`. Consult the Go handlers and tests for the complete request/response contract.
+The corresponding backend routes are under:
 
-Floor-plan data currently represents rooms, walls, doors, and windows using metric dimensions. The API validates element identifiers, geometry values, wall/opening references, and relevant land-boundary constraints before saving a new design version.
+```text
+/api/v1/projects
+```
+
+The floor-plan API handles structured room, wall, door, and window data, including relevant geometry and reference validation.
+
+Consult the Go handlers and tests for the complete request and response contracts.
 
 ---
 
-## CAD export workflow
-
-1. A CAD export job is submitted with project, design, version, and target identifiers.
-2. The worker receives the `cad.export` job from the Redis-backed queue.
-3. The executor validates the request and loads the selected design version.
-4. The embedded FreeCAD Python exporter builds the requested 2D and/or 3D document.
-5. Generated files are checked for existence and non-zero size, then hashed.
-6. Artifact metadata is stored in PostgreSQL and the files are retained in the configured CAD storage directory.
+## CAD Export Pipeline
 
 ### Export targets
 
@@ -242,176 +443,339 @@ Floor-plan data currently represents rooms, walls, doors, and windows using metr
 | `3d` | FCStd and STEP |
 | `both` | Both 2D and 3D artifact sets |
 
-Artifact records include the job, project, design, and immutable version identifiers. The database enforces consistency between the referenced project/design/version chain and records the SHA-256 checksum and file size.
+### Artifact metadata
 
-**Current scope and limitations**
+Generated CAD artifacts are associated with:
 
-- The 2D exporter creates room boundary geometry and wall centerlines.
-- The current 3D exporter creates a building slab and wall solids, including supported door/window opening cuts.
-- The automated exporter does not yet generate a complete construction-ready architectural model.
-- Roof, stair, balcony, railing, MEP, structural engineering, and detailed material assemblies are not part of the current worker export contract.
-- STEP output is an exchange deliverable; it is not an IFC/BIM model.
-- Generated geometry must be reviewed in CAD software and by qualified architecture/engineering professionals before any construction use.
+- Project ID.
+- Design ID.
+- Immutable version ID.
+- Background job reference.
+- Export dimension.
+- File format.
+- Storage key.
+- SHA-256 checksum.
+- File size.
+
+The database migration enforces consistency between project, design, and version references and applies constraints to artifact metadata.
+
+### Current geometry scope
+
+The current 2D exporter generates room boundary geometry and wall centerlines.
+
+The current 3D exporter generates a building slab and wall solids, including supported door and window opening cuts.
+
+The current automated exporter does not yet generate a complete construction-ready architectural model.
+
+The following are not currently part of the worker export contract:
+
+- Complete roof generation.
+- Automated stair and balcony integration.
+- Railings.
+- Mechanical, electrical, and plumbing systems.
+- Structural engineering calculations.
+- Detailed construction material assemblies.
+- IFC/BIM model generation.
+
+Generated geometry must be reviewed using appropriate CAD tools and by qualified architecture and engineering professionals before construction use.
 
 ---
 
-## Database migrations and security
+## Database and Security
 
-SQL migrations are embedded in the Go API and are applied by the migration runner.
+The backend uses PostgreSQL with embedded SQL migrations.
 
-The database setup separates bootstrap, migration, object ownership, and runtime responsibilities. The API and worker should use the restricted runtime credentials, not the bootstrap or database-owner account.
+Database responsibilities are separated between:
 
-The CAD artifact migration adds:
+- Bootstrap operations.
+- Schema migration operations.
+- Database object ownership.
+- Application runtime operations.
 
-- Project/design and design/version consistency constraints.
-- Supported dimension and format checks.
-- Unique storage keys.
-- SHA-256 checksum and positive file-size constraints.
-- Unique output records per job, dimension, and format.
+The API and worker should use restricted runtime credentials rather than database-owner or bootstrap accounts.
 
-Back up important databases before applying schema changes. Do not edit migrations that have already been applied; create a new migration instead.
+### CAD artifact integrity
+
+The CAD artifact migration includes constraints for:
+
+- Project/design consistency.
+- Design/version consistency.
+- Supported export dimensions and formats.
+- Unique artifact storage keys.
+- SHA-256 checksum values.
+- Positive artifact file sizes.
+- Unique job output records per dimension and format.
+
+### Security principles
+
+- Keep credentials outside source control.
+- Use restricted database credentials for runtime services.
+- Validate user input and geometry.
+- Preserve design version traceability.
+- Protect project data and generated artifacts.
+- Back up important data before schema changes.
+- Add new migrations instead of modifying migrations already applied to a database.
 
 ---
 
-## Development checks
+## Development and Testing
 
-Run Go tests from `services/api`:
+### Backend tests
+
+Run from `services/api`:
 
 ```powershell
 go test ./... -count=1
 ```
 
-Run frontend checks from the repository root:
+### Frontend lint
+
+Run from the repository root:
 
 ```powershell
 pnpm lint
+```
+
+### Frontend production build
+
+```powershell
 pnpm build
 ```
 
-### Latest local verification recorded
+### Latest recorded local verification
 
 On 25 November 2026, the development session reported:
 
-- `go test ./... -count=1` — passed.
-- `pnpm lint` — passed.
-- `pnpm build` — passed.
+| Check | Result |
+|---|---|
+| `go test ./... -count=1` | Passed |
+| `pnpm lint` | Passed |
+| `pnpm build` | Passed |
 
-These are local development results for the recorded source state. They are not a statement that a production deployment, external CAD interoperability certification, or construction-code validation has been completed.
+These results refer to the recorded local development source state. They do not constitute production deployment certification, CAD interoperability certification, or construction-code compliance validation.
 
 ---
 
-## Roadmap
+## Product Roadmap
 
-| Area | Current status |
+The roadmap represents planned product development and is subject to technical and commercial validation.
+
+| Development area | Status |
 |---|---|
-| Project workspace and project editing | Implemented foundation |
-| Structured floor-plan read/write workflow | Implemented foundation |
-| Immutable design-version persistence | Implemented |
-| Redis-backed worker and CAD export executor | Implemented foundation |
-| 2D DXF / FCStd export | Implemented |
-| 3D FCStd / STEP export | Implemented foundation |
+| Project workspace | Implemented foundation |
+| Project editing | Implemented |
+| Structured floor-plan management | Implemented foundation |
+| Immutable design versioning | Implemented |
+| Asynchronous CAD processing | Implemented foundation |
+| 2D DXF and FCStd export | Implemented |
+| 3D FCStd and STEP export | Implemented foundation |
 | Full architectural model generation | In progress / future expansion |
-| Roof, stairs, balcony and detailed building components in automated exporter | Planned |
-| AI-assisted brief interpretation and floor-plan generation | Planned |
-| Interactive 2D/3D model visualization | Planned / expanding |
+| Automated roof, stairs, and balcony integration | Planned |
+| AI-assisted design brief interpretation | Planned |
+| AI-assisted floor-plan generation | Planned |
+| Advanced 2D/3D visualization | Planned / expanding |
 | IFC/BIM interoperability | Planned |
-| BOQ, RAB and material estimation | Planned |
-| Supplier, contractor and construction ecosystem integrations | Planned |
-| Production deployment, monitoring and operational hardening | Planned |
-
-Roadmap items may change as implementation and validation progress.
-
----
-
-## Engineering principles
-
-- Keep project data and design versions traceable.
-- Treat saved design versions as immutable inputs to export jobs.
-- Keep CAD generation outside the HTTP request lifecycle.
-- Validate input geometry and artifact metadata.
-- Preserve existing work and use incremental, testable changes.
-- Keep credentials and local build artifacts out of source control.
-- Clearly distinguish implemented capabilities from planned features.
-- Treat generated designs as concept and engineering-support artifacts, not substitutes for professional review, permits, or regulatory approval.
+| Bill of Quantities (BOQ) | Planned |
+| Rencana Anggaran Biaya (RAB) | Planned |
+| Material estimation | Planned |
+| Supplier and contractor integrations | Planned |
+| Production deployment and monitoring | Planned |
 
 ---
 
-## Business opportunity
+## Business Model Opportunities
 
-AI House Generator is being developed to connect early-stage residential design workflows with structured project data and CAD deliverables. The longer-term product direction is to reduce friction between the initial design brief, floor-plan development, technical handoff, and downstream construction activities.
+AI House Generator is being developed with several potential commercialization paths. These are business-model opportunities for evaluation and validation, not claims of existing commercial revenue.
 
-### Target users and customer segments
+### 1. SaaS Subscription
 
-- **Homeowners and individual property owners** — organize house requirements and collaborate around an evolving design.
-- **Architects and architectural studios** — accelerate early-stage layout workflows and manage structured design revisions.
-- **Engineering and design consultants** — use versioned project information as an input to CAD-based review and coordination.
-- **Contractors and construction companies** — explore more consistent handoffs from design information to project execution.
-- **Property developers and real-estate businesses** — evaluate repeatable design workflows for residential projects.
-- **Building-material suppliers and manufacturers** — explore structured product and material information integrations.
+A subscription-based platform for different user segments, potentially including:
 
-These are intended market segments, not a claim of existing customers, signed contracts, or commercial deployments.
+- Individual homeowners.
+- Freelance architects.
+- Small architectural studios.
+- Engineering consultants.
+- Construction companies.
+- Enterprise customers.
 
-### Value proposition and product direction
+Potential subscription tiers may include individual, professional, team, and enterprise plans.
 
-The platform is designed around a connected workflow:
+### 2. Usage-Based Services
 
-- Keep project details and floor-plan elements in a structured digital workspace.
-- Preserve design revisions as identifiable versions.
-- Generate initial 2D and 3D CAD deliverables from selected design versions.
-- Create a technical foundation for future AI-assisted design, visualization, material estimation, and construction ecosystem integrations.
+Potential paid services based on:
 
-The current implementation is an active development-stage foundation. It should not be represented as a fully automated, construction-ready design system.
+- CAD export volume.
+- Advanced design processing.
+- Project storage.
+- Additional processing capacity.
+- Specialized design workflows.
 
-### Potential business and revenue models
+### 3. Enterprise Licensing
 
-The following are business-model options for validation; none is presented as an already launched or revenue-generating service:
+Customized deployments and commercial agreements for:
 
-- **SaaS subscriptions** — tiered access for individual users, studios, and business teams.
-- **Usage-based services** — paid CAD exports, processing capacity, or advanced project workflows.
-- **Enterprise licensing** — tailored deployments, integrations, support, and workflow configuration.
-- **Professional services** — implementation, customization, training, and technical integration.
-- **Partner ecosystem** — referral, reseller, or co-delivery arrangements with qualified industry partners.
-- **Data and catalog integrations** — commercial integrations with material suppliers and construction-product providers, subject to data rights and partner agreements.
+- Property developers.
+- Architecture and engineering firms.
+- Construction companies.
+- Large design organizations.
+- Technology partners.
 
-Pricing, packaging, and go-to-market strategy remain subject to customer discovery and commercial validation.
+### 4. Professional Services
 
-## Partnership and collaboration
+Potential services include:
 
-We welcome conversations with organizations that can contribute domain expertise, distribution, technology, pilot environments, or market access.
+- Software customization.
+- Enterprise integration.
+- Technical implementation.
+- Workflow configuration.
+- Training and onboarding.
+- CAD automation consulting.
 
-| Partner profile | Potential collaboration |
+### 5. Partner Ecosystem
+
+Potential revenue opportunities through:
+
+- Strategic distribution.
+- Reseller agreements.
+- Co-delivery arrangements.
+- Technology integration.
+- Material catalog partnerships.
+- Construction ecosystem services.
+
+Pricing, packaging, commercial terms, and go-to-market strategy remain subject to customer discovery and market validation.
+
+---
+
+## Strategic Partnerships
+
+PT DIGI MEDIA KOMUNIKA welcomes discussions with organizations interested in contributing to the development and commercialization of AI House Generator.
+
+### Potential strategic partners
+
+| Partner category | Collaboration opportunity |
 |---|---|
-| Architects and engineering consultants | Workflow validation, design review, domain expertise, and pilot projects |
-| Contractors and construction companies | Practical workflow testing and design-to-construction feedback |
-| Property developers | Residential project pilots and repeatable design workflows |
-| CAD/BIM and software providers | Interoperability, integrations, and joint product development |
-| Material manufacturers and suppliers | Product catalogs, specifications, and material-data integrations |
-| Universities and research institutions | Applied research, AI experimentation, and student or faculty collaboration |
-| Investors and strategic partners | Product development, market access, commercialization, and strategic growth |
+| Architecture studios | Product validation and professional workflow integration |
+| Engineering consultants | Technical design review and engineering workflow collaboration |
+| Construction companies | Pilot projects and construction workflow feedback |
+| Property developers | Residential project pilots and scalable design workflows |
+| CAD/BIM providers | Software interoperability and technical integrations |
+| Building-material manufacturers | Digital catalogs and product specification integration |
+| Material distributors | Product data and commercial ecosystem integration |
+| Universities | Applied research and innovation programs |
+| Technology companies | Joint development and technology integration |
+| Investors | Strategic funding and commercialization |
 
-### Ways to work together
+### Collaboration opportunities
 
-- **Pilot project:** validate workflows against a clearly scoped real-world use case.
-- **Technology integration:** connect complementary software, APIs, CAD/BIM tools, or product data.
-- **Joint development:** co-design and build capabilities with clearly agreed ownership and responsibilities.
-- **Channel or reseller partnership:** explore distribution and customer acquisition in agreed markets.
-- **Research collaboration:** investigate AI-assisted design, building data, and digital construction workflows.
-- **Investment discussion:** discuss strategic funding and growth opportunities based on product maturity and a mutually agreed business plan.
+**Pilot Projects**  
+Collaborate on clearly scoped residential design or construction workflow pilots.
 
-All partnerships, pilots, integrations, commercial terms, intellectual-property rights, and data responsibilities require separate written agreement. Listing a collaboration opportunity does not imply an existing partnership or endorsement.
+**Technology Integration**  
+Integrate complementary applications, APIs, CAD/BIM tools, and material databases.
 
-### Business contact
+**Joint Product Development**  
+Co-develop selected capabilities under agreed technical, commercial, and intellectual-property terms.
 
-**Developed by PT DIGI MEDIA KOMUNIKA**
+**Distribution and Reseller Partnerships**  
+Explore commercial distribution and market access in mutually agreed territories.
 
-- Business and partnership email: [ptdigimediakomunika@gmail.com](mailto:ptdigimediakomunika@gmail.com)
-- GitHub repository: [github.com/sazwarriyadhs/aihouse](https://github.com/sazwarriyadhs/aihouse)
-- CAD platform: [FreeCAD](https://www.freecad.org/)
+**Research and Innovation**  
+Collaborate on AI-assisted residential design, digital construction, and building information workflows.
 
-For a partnership inquiry, please include your organization, proposed collaboration area, target use case, and preferred next step.
+**Strategic Investment**  
+Explore investment opportunities to accelerate product development, market expansion, and commercialization.
+
+All collaboration arrangements require separate written agreements covering scope, responsibilities, intellectual property, data ownership, confidentiality, and commercial terms.
+
+Listing a potential partner category does not imply an existing partnership, endorsement, or agreement.
 
 ---
 
-## License
+## Commercial Opportunities
 
-No open-source license has been specified in this repository yet. Unless and until a license is added, all rights are reserved. Do not assume that the source code is available for unrestricted reuse.
+AI House Generator is intended to support a broader residential design and construction technology ecosystem.
+
+Potential future opportunities include:
+
+- Digital residential design services.
+- AI-assisted house-design workflows.
+- CAD automation services.
+- Enterprise architecture and engineering workflow solutions.
+- Material and product catalog integration.
+- Construction project coordination.
+- Residential development technology partnerships.
+- White-label and customized enterprise solutions.
+
+The commercial strategy will be developed in line with product maturity, customer requirements, technical validation, and market opportunities.
+
+---
+
+## Contact and Company Information
+
+**Product:** AI House Generator (AHG)  
+**Company:** PT DIGI MEDIA KOMUNIKA  
+**Product Category:** AI-Assisted Residential Design & CAD Automation  
+**Development Status:** Active Development
+
+**Business and Partnership Contact**
+
+Email: [ptdigimediakomunika@gmail.com](mailto:ptdigimediakomunika@gmail.com)
+
+**Source Repository**
+
+[https://github.com/sazwarriyadhs/aihouse](https://github.com/sazwarriyadhs/aihouse)
+
+**CAD Technology**
+
+[https://www.freecad.org/](https://www.freecad.org/)
+
+For business, investment, technology integration, or partnership inquiries, please include:
+
+1. Organization or company profile.
+2. Proposed collaboration area.
+3. Intended use case or business opportunity.
+4. Expected scope of collaboration.
+5. Preferred next step.
+
+---
+
+## Engineering Principles
+
+AI House Generator is developed with the following principles:
+
+- **Traceability:** Keep project information and design revisions identifiable.
+- **Modularity:** Separate application, backend, processing, and CAD responsibilities.
+- **Automation:** Reduce repetitive design and document-generation workflows.
+- **Data integrity:** Validate structured data and generated artifact metadata.
+- **Scalability:** Establish a foundation for additional services and integrations.
+- **Security:** Protect project information, credentials, and generated deliverables.
+- **Transparency:** Clearly distinguish implemented features from planned capabilities.
+- **Professional responsibility:** Treat generated designs as engineering-support outputs that require qualified review.
+
+---
+
+## License and Intellectual Property
+
+Copyright © 2026 **PT DIGI MEDIA KOMUNIKA**. All rights reserved.
+
+AI House Generator (AHG) is proprietary software developed by PT DIGI MEDIA KOMUNIKA.
+
+Unless expressly authorized in writing by the copyright holder, no permission is granted to reproduce, distribute, modify, sublicense, commercially exploit, or create derivative works from this software or its proprietary materials.
+
+Access to this public repository is provided for viewing and evaluation purposes only. It does not transfer ownership or grant any intellectual property rights.
+
+Third-party libraries, frameworks, software, and tools remain subject to their respective licenses and terms. Their inclusion in this project does not transfer ownership of those third-party components to PT DIGI MEDIA KOMUNIKA.
+
+For commercial licensing, technology partnerships, investment opportunities, enterprise deployment, or other authorized use, please contact:
+
+**PT DIGI MEDIA KOMUNIKA**
+
+Email: [ptdigimediakomunika@gmail.com](mailto:ptdigimediakomunika@gmail.com)
+
+---
+
+<p align="center">
+  <strong>AI House Generator</strong><br />
+  <em>Intelligent Design. Structured Engineering. Connected Construction.</em><br /><br />
+  Developed by PT DIGI MEDIA KOMUNIKA
+</p>
